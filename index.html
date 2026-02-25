@@ -210,6 +210,18 @@
     @supports(padding: max(0px)){
       .app{padding-bottom: max(12px, env(safe-area-inset-bottom))}
     }
+    /* ===== PSEUDO FULLSCREEN (iPhone friendly) ===== */
+.pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  z-index: 9999 !important;
+}
+.hide-when-pseudo {
+  display: none !important;
+}
   </style>
 </head>
 
@@ -1092,13 +1104,29 @@
     // Fullscreen
     // =========================
     async function toggleFullscreen() {
-      try {
-        if (!document.fullscreenElement) await screen.requestFullscreen();
-        else await document.exitFullscreen();
-      } catch {
-        showToast('Fullscreen non disponibile su questo browser');
-      }
+  // Se il fullscreen "vero" non è disponibile (iPhone), usiamo quello finto.
+  const canFs = !!(screen.requestFullscreen && document.fullscreenEnabled);
+
+  if (canFs) {
+    try {
+      if (!document.fullscreenElement) await screen.requestFullscreen();
+      else await document.exitFullscreen();
+      return;
+    } catch {
+      // Se fallisce, usiamo comunque il fullscreen finto
     }
+  }
+
+  // Fullscreen finto: lo schermo diventa a tutto schermo e nascondiamo le colonne
+  const isPseudo = screen.classList.contains('pseudo-fullscreen');
+  screen.classList.toggle('pseudo-fullscreen', !isPseudo);
+
+  document.querySelectorAll('.sidebar').forEach(el => {
+    el.classList.toggle('hide-when-pseudo', !isPseudo);
+  });
+
+  fullscreenBtn.textContent = !isPseudo ? '⤢' : '⛶';
+}
     document.addEventListener('fullscreenchange', () => {
       fullscreenBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
     });
