@@ -900,6 +900,21 @@
         edit.textContent = '✏️';
         edit.onclick = () => openModal('edit', idx);
 
+        const dup = document.createElement('button');
+dup.className = 'icon';
+dup.title = 'Duplica';
+dup.textContent = '📄';
+dup.onclick = () => {
+  // Copia profonda della sezione (così media/oggetti vengono duplicati bene)
+  const copy = JSON.parse(JSON.stringify(sections[idx]));
+  sections.splice(idx + 1, 0, copy);
+
+  // Se sei sulla sezione corrente e duplichi "prima" o "qui", tieni stabile l'indice
+  if (currentIndex > idx) currentIndex++;
+
+  renderSections();
+};
+
         const del = document.createElement('button');
         del.className = 'icon danger';
         del.title = 'Elimina';
@@ -920,6 +935,7 @@
 
         actions.appendChild(up);
         actions.appendChild(down);
+        actions.appendChild(dup);
         actions.appendChild(edit);
         actions.appendChild(del);
 
