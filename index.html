@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sezioni / Player / Progetti</title>
+  <style>
+    :root{
+      --bg:#f3f4f6;--panel:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;
+      --shadow:0 10px 25px rgba(0,0,0,.08);
+      --btn:#111827;--btnText:#fff;--btn2:#fff;--btn2Text:#111827;
+      --danger:#ef4444; --ok:#16a34a;
+      --focus: 0 0 0 3px rgba(59,130,246,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;display:grid;place-items:center;
+    }
+    .app{
+      width:min(1200px,95vw);
+      height:min(720px,92vh);
+      display:grid;grid-template-columns:260px 1fr 260px;gap:18px;padding:18px;
+    }
+    .sidebar{
+      background:var(--panel);border:1px solid var(--border);border-radius:14px;
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px;
+      overflow:auto;-webkit-overflow-scrolling: touch;
+    }
+    .sidebar h2{margin:0;font-size:18px;letter-spacing:.2px}
+    .hint{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
+    .mini{font-size:12px;color:var(--muted)}
+    .row{display:flex;align-items:center;gap:10px}
+    .grow{flex:1}
+    button{
+      appearance:none;border:1px solid var(--border);background:var(--btn2);color:var(--btn2Text);
+      border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;
+      touch-action: manipulation;
+    }
+    button.primary{background:var(--btn);color:var(--btnText);border-color:transparent}
+    button.ok{background:var(--ok);color:#fff;border-color:transparent}
+    button.danger{background:var(--danger);color:#fff;border-color:transparent}
+    button:focus{outline:none;box-shadow:var(--focus)}
+    button.icon{
+      width:40px;height:40px;padding:0;display:grid;place-items:center;
+      font-size:16px;line-height:1;border-radius:12px;
+    }
+    button.icon:disabled{opacity:.45;cursor:not-allowed}
+    input, textarea, select{
+      width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;
+      font:inherit;background:#fff;
+    }
+    input:focus, textarea:focus, select:focus{outline:none;box-shadow:var(--focus)}
+    textarea{min-height:90px;resize:vertical}
+    .divider{height:1px;background:var(--border);margin:8px 0}
+    .section-list,.project-list{display:flex;flex-direction:column;gap:10px}
+    .card{
+      border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .card-top{display:flex;align-items:flex-start;gap:8px}
+    .badge{
+      font-size:12px;font-weight:900;color:#111827;background:#f3f4f6;border:1px solid var(--border);
+      padding:3px 8px;border-radius:999px;white-space:nowrap;
+    }
+    .card-title{font-weight:900;font-size:14px;margin:0}
+    .card-meta{font-size:12px;color:var(--muted);margin:0}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+
+    /* PLAYER */
+    .screen-wrap{display:grid;place-items:center;background:transparent; position:relative}
+    .screen{
+      width:min(680px,100%);
+      height:min(520px,100%);
+      background:#000;border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 18px 40px rgba(0,0,0,.25);
+      position:relative;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .screen::before{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(to bottom,rgba(255,255,255,.08),rgba(255,255,255,0) 28%,rgba(255,255,255,.04));
+      pointer-events:none;
+    }
+
+    .player-title{
+      position:absolute;left:12px;right:12px;top:12px;
+      color:#fff;font-weight:900;font-size:18px;
+      text-shadow:0 2px 10px rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      pointer-events:none;
+    }
+    .player-title .title-text{
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      pointer-events:none;
+    }
+    .player-controls-top{pointer-events:auto;display:flex;gap:8px;}
+    .player-btn-top{
+      border:none;background:rgba(255,255,255,.14);color:#fff;
+      padding:10px 12px;border-radius:12px;font-weight:900;
+      backdrop-filter: blur(6px);
+    }
+
+    .player-media{
+      width:100%;height:100%;
+      display:flex;align-items:center;justify-content:center;
+      padding:56px 12px 78px;
+    }
+    .player-media img,.player-media video{
+      max-width:100%;max-height:100%;
+      object-fit:contain;border-radius:12px;
+    }
+    .player-empty{
+      color:rgba(255,255,255,.85);
+      text-align:center;padding:20px;max-width:90%;
+    }
+
+    .player-bottom{
+      position:absolute;left:12px;right:12px;bottom:12px;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      pointer-events:auto;
+    }
+    .player-nav{
+      border:none;background:rgba(255,255,255,.14);color:#fff;
+      padding:14px 16px;border-radius:14px;font-weight:900;
+      backdrop-filter: blur(6px);min-width:120px;
+    }
+    .player-nav:disabled{opacity:.45}
+
+    .countdown-overlay{
+      position:absolute;inset:0;display:none;
+      align-items:center;justify-content:center;
+      color:#fff;font-weight:1000;font-size:72px;
+      text-shadow:0 2px 20px rgba(0,0,0,.55);
+      pointer-events:none;
+    }
+
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);
+      display:none;align-items:center;justify-content:center;padding:18px;}
+    .modal{width:min(560px, 96vw);background:#fff;border-radius:16px;border:1px solid var(--border);
+      box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden;}
+    .modal header{padding:14px 16px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .modal h3{margin:0;font-size:16px}
+    .modal .content{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+    .modal footer{padding:14px 16px;border-top:1px solid var(--border);
+      display:flex;gap:10px;justify-content:flex-end;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .hidden{display:none !important}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--border);
+      border-radius:999px;padding:6px 10px;background:#fafafa;font-size:12px;color:var(--muted);
+      max-width:100%;
+    }
+
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:#111827;color:#fff;border-radius:999px;
+      padding:10px 14px;font-weight:800;font-size:13px;
+      box-shadow:0 12px 30px rgba(0,0,0,.22);
+      display:none;z-index:50;max-width:92vw;text-align:center;
+    }
+
+    /* Portrait (telefono in verticale): impila */
+@media (orientation: portrait) and (max-width: 900px){
+  body{place-items:stretch}
+  .app{
+    width:100vw;height:100vh;
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr auto;
+    gap:12px;padding:12px;
+  }
+  .screen{width:100%;height:55vh;border-radius:16px}
+  .player-nav{min-width:44vw}
+}
+
+/* Landscape (telefono in orizzontale): 3 colonne come su PC */
+@media (orientation: landscape) and (max-width: 950px){
+  body{place-items:stretch}
+  .app{
+    width:100vw;height:100vh;
+    grid-template-columns: 240px 1fr 240px;
+    grid-template-rows: 1fr;
+    gap:10px;
+    padding:10px;
+  }
+  .screen{
+    width:100%;
+    height:100%;
+    border-radius:16px;
+  }
+  .player-media{
+    padding:52px 10px 72px; /* leggermente più compatto */
+  }
+  .player-nav{
+    min-width: 140px; /* bottoni più stabili */
+    padding:12px 14px;
+  }
+}
+/* iOS: riduce bug di click su layer con blur */
+.player-btn-top, .player-nav {
+  -webkit-tap-highlight-color: transparent;
+}
+.screen, .player-bottom, .player-controls-top {
+  transform: translateZ(0);
+}
+    @supports(padding: max(0px)){
+      .app{padding-bottom: max(12px, env(safe-area-inset-bottom))}
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <!-- Sinistra -->
+    <aside class="sidebar" aria-label="Sezioni">
+      <div class="row" style="align-items:flex-end">
+        <div class="grow">
+          <h2>Sezioni</h2>
+          <div id="projectBadge" class="pill" title="Progetto corrente">Progetto: (non salvato)</div>
+        </div>
+        <button id="addBtn" class="icon primary" title="Aggiungi sezione" aria-label="Aggiungi sezione">+</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="sectionList" class="section-list"></div>
+      <p id="emptyState" class="hint">Nessuna sezione ancora. Premi “+” per crearne una.</p>
+    </aside>
+
+    <!-- Centro -->
+    <section class="screen-wrap" aria-label="Schermo centrale">
+      <div id="screen" class="screen" aria-label="Player">
+        <div class="player-title">
+          <div id="playerTitle" class="title-text">Nessuna sezione</div>
+          <div class="player-controls-top">
+            <button id="fullscreenBtn" class="player-btn-top" title="Schermo intero">⛶</button>
+          </div>
+        </div>
+
+        <div id="playerMedia" class="player-media">
+          <div class="player-empty">
+            Aggiungi delle sezioni a sinistra.<br/>
+            Poi usa <b>Avanti</b> / <b>Indietro</b>.
+          </div>
+        </div>
+
+        <div id="countdownOverlay" class="countdown-overlay">3</div>
+
+        <div class="player-bottom">
+          <button id="backBtn" class="player-nav" disabled>◀ Indietro</button>
+          <button id="nextBtn" class="player-nav" disabled>Avanti ▶</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Destra -->
+    <aside class="sidebar" aria-label="Progetti">
+      <div class="row" style="align-items:flex-end">
+        <div class="grow">
+          <h2>Progetti</h2>
+          <p class="mini" style="margin:6px 0 0">Premi “+ Nuovo” per iniziare un progetto nuovo.</p>
+        </div>
+        <button id="newProjectBtn" class="icon primary" title="Nuovo progetto" aria-label="Nuovo progetto">+</button>
+      </div>
+
+      <div class="row">
+        <input id="projectName" class="grow" type="text" placeholder="Nome progetto..." />
+        <button id="saveProjectBtn" class="ok" title="Salva (aggiorna se caricato)">Salva</button>
+      </div>
+
+      <div class="row">
+        <button id="saveAsNewBtn" class="primary" title="Salva sempre come nuovo">Salva come nuovo</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="projectList" class="project-list"></div>
+      <p id="noProjects" class="hint">Nessun progetto salvato.</p>
+    </aside>
+  </main>
+
+  <!-- Modal sezione -->
+  <div id="backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <header>
+        <h3 id="modalTitle">Nuova sezione</h3>
+        <button id="closeModal" class="icon" aria-label="Chiudi">×</button>
+      </header>
+
+      <div class="content">
+        <label>
+          Tipo sezione
+          <select id="typeSelect">
+            <option value="esercizio">Esercizio</option>
+            <option value="countdown">Countdown</option>
+          </select>
+        </label>
+
+        <div id="formEsercizio">
+          <label>
+            Titolo (facoltativo)
+            <input id="exTitle" type="text" placeholder="Es. Push up" />
+          </label>
+
+          <div class="grid2">
+            <label>
+              Media (facoltativo)
+              <input id="exMediaFile" type="file" accept="image/*,video/*,.gif" />
+              <div class="mini">File verrà salvato nel progetto se non è troppo grande.</div>
+            </label>
+
+            <label>
+              Link media (facoltativo)
+              <input id="exMediaLink" type="url" placeholder="https://..." />
+              <div class="mini">Consigliato per file pesanti.</div>
+            </label>
+          </div>
+
+          <label>
+            Note (facoltativo)
+            <textarea id="exNotes" placeholder="Scrivi eventuali note..."></textarea>
+          </label>
+
+          <label>
+            Cambio schermata
+            <select id="exChangeMode">
+              <option value="avanti">Tasto avanti</option>
+              <option value="countdown">Countdown</option>
+            </select>
+          </label>
+
+          <label id="exSecondsWrap" class="hidden">
+            Secondi countdown
+            <input id="exSeconds" type="number" min="1" step="1" value="30" />
+          </label>
+        </div>
+
+        <div id="formCountdown" class="hidden">
+          <label>
+            Secondi countdown
+            <input id="cdSeconds" type="number" min="1" step="1" value="30" />
+          </label>
+        </div>
+
+        <p id="errorMsg" class="mini" style="color: var(--danger); display:none;"></p>
+      </div>
+
+      <footer>
+        <button id="cancelBtn">Annulla</button>
+        <button id="saveSectionBtn" class="primary">Crea</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================
+    // Robust storage: IndexedDB -> localStorage fallback
+    // =========================
+    const STORAGE = (() => {
+      const DB_NAME = 'castelli_db_v2';
+      const STORE = 'kv';
+      const KEY = 'projects';
+
+      let db = null;
+
+      function openDB() {
+        return new Promise((resolve) => {
+          if (!('indexedDB' in window)) return resolve(null);
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = () => {
+            const d = req.result;
+            if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
+      }
+
+      async function ensure() {
+        if (db !== null) return db;
+        db = await openDB();
+        return db;
+      }
+
+      async function idbGet() {
+        const d = await ensure();
+        if (!d) return null;
+        return new Promise((resolve) => {
+          const tx = d.transaction(STORE, 'readonly');
+          const st = tx.objectStore(STORE);
+          const r = st.get(KEY);
+          r.onsuccess = () => resolve(r.result ?? null);
+          r.onerror = () => resolve(null);
+        });
+      }
+
+      async function idbSet(value) {
+        const d = await ensure();
+        if (!d) return false;
+        return new Promise((resolve) => {
+          const tx = d.transaction(STORE, 'readwrite');
+          const st = tx.objectStore(STORE);
+          const r = st.put(value, KEY);
+          r.onsuccess = () => resolve(true);
+          r.onerror = () => resolve(false);
+        });
+      }
+
+      function lsGet() {
+        try {
+          const raw = localStorage.getItem('castelli_projects_fallback_v2');
+          return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+      }
+
+      function lsSet(value) {
+        try {
+          localStorage.setItem('castelli_projects_fallback_v2', JSON.stringify(value));
+          return true;
+        } catch { return false; }
+      }
+
+      return {
+        async loadProjects() {
+          const fromIDB = await idbGet();
+          if (fromIDB) return fromIDB;
+
+          const fromLS = lsGet();
+          if (fromLS) return fromLS;
+
+          return [];
+        },
+        async saveProjects(projects) {
+          const okIDB = await idbSet(projects);
+          if (okIDB) return { ok: true, where: 'IndexedDB' };
+
+          const okLS = lsSet(projects);
+          if (okLS) return { ok: true, where: 'localStorage' };
+
+          return { ok: false, where: 'none' };
+        }
+      };
+    })();
+
+    // =========================
+    // DOM
+    // =========================
+    const sectionList = document.getElementById('sectionList');
+    const emptyState = document.getElementById('emptyState');
+
+    const projectList = document.getElementById('projectList');
+    const noProjects = document.getElementById('noProjects');
+    const projectNameInput = document.getElementById('projectName');
+    const saveProjectBtn = document.getElementById('saveProjectBtn');
+    const saveAsNewBtn = document.getElementById('saveAsNewBtn');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const projectBadge = document.getElementById('projectBadge');
+
+    const screen = document.getElementById('screen');
+    const playerTitle = document.getElementById('playerTitle');
+    const playerMedia = document.getElementById('playerMedia');
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+    const toast = document.getElementById('toast');
+
+    const backdrop = document.getElementById('backdrop');
+    const addBtn = document.getElementById('addBtn');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveSectionBtn = document.getElementById('saveSectionBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const modalTitle = document.getElementById('modalTitle');
+
+    const typeSelect = document.getElementById('typeSelect');
+    const formEsercizio = document.getElementById('formEsercizio');
+    const formCountdown = document.getElementById('formCountdown');
+
+    const exTitle = document.getElementById('exTitle');
+    const exMediaFile = document.getElementById('exMediaFile');
+    const exMediaLink = document.getElementById('exMediaLink');
+    const exNotes = document.getElementById('exNotes');
+    const exChangeMode = document.getElementById('exChangeMode');
+    const exSecondsWrap = document.getElementById('exSecondsWrap');
+    const exSeconds = document.getElementById('exSeconds');
+    const cdSeconds = document.getElementById('cdSeconds');
+
+    // =========================
+    // State
+    // =========================
+    let sections = [];
+    let editingIndex = null;
+    let currentProjectId = null;
+
+    let currentIndex = 0;
+    let countdownTimer = null;
+    let countdownRemaining = 0;
+
+    const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+    // =========================
+    // Toast
+    // =========================
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.style.display = 'none', 2400);
+    }
+
+    // =========================
+    // Helpers
+    // =========================
+    function clearError(){ errorMsg.style.display='none'; errorMsg.textContent=''; }
+    function showError(msg){ errorMsg.textContent=msg; errorMsg.style.display='block'; }
+
+    function formatSectionLabel(s) {
+      if (s.type === 'countdown') return `Countdown • ${s.seconds}s`;
+      const title = (s.title && s.title.trim()) ? s.title.trim() : 'Esercizio';
+      const mode = s.changeMode === 'avanti' ? 'Avanti' : `Countdown ${s.seconds}s`;
+      return `${title} • ${mode}`;
+    }
+
+    function metaFor(s) {
+      const parts = [];
+      if (s.media && s.media.kind) parts.push(`Media: ${s.media.kind}`);
+      if (s.notes) parts.push('Note: sì');
+      return parts.length ? parts.join(' • ') : 'Nessun dettaglio aggiuntivo';
+    }
+
+    async function setBadge() {
+      if (!currentProjectId) {
+        projectBadge.textContent = 'Progetto: (nuovo)';
+        return;
+      }
+      const projects = await STORAGE.loadProjects();
+      const p = projects.find(x => x.id === currentProjectId);
+      projectBadge.textContent = p ? `Progetto: ${p.name}` : 'Progetto: (nuovo)';
+    }
+
+    function detachCurrentProject() {
+      currentProjectId = null;     // <-- IMPORTANT: così "Salva" crea un nuovo progetto
+      projectNameInput.value = ''; // nome vuoto (utente lo mette)
+      setBadge();
+    }
+
+    // =========================
+    // Modal
+    // =========================
+    function switchTypeUI() {
+      const t = typeSelect.value;
+      if (t === 'esercizio') {
+        formEsercizio.classList.remove('hidden');
+        formCountdown.classList.add('hidden');
+      } else {
+        formEsercizio.classList.add('hidden');
+        formCountdown.classList.remove('hidden');
+      }
+    }
+    function switchExerciseModeUI() {
+      if (exChangeMode.value === 'countdown') exSecondsWrap.classList.remove('hidden');
+      else exSecondsWrap.classList.add('hidden');
+    }
+
+    function openModal(mode, idx = null) {
+      clearError();
+      backdrop.style.display = 'flex';
+      editingIndex = (mode === 'edit') ? idx : null;
+
+      if (editingIndex === null) {
+        modalTitle.textContent = 'Nuova sezione';
+        saveSectionBtn.textContent = 'Crea';
+        resetFormDefaults();
+      } else {
+        modalTitle.textContent = 'Modifica sezione';
+        saveSectionBtn.textContent = 'Salva modifiche';
+        fillFormFromSection(sections[editingIndex]);
+      }
+      setTimeout(() => typeSelect.focus(), 0);
+    }
+
+    function closeModalFn() {
+      backdrop.style.display = 'none';
+      editingIndex = null;
+    }
+
+    function resetFormDefaults() {
+      typeSelect.value = 'esercizio';
+      switchTypeUI();
+
+      exTitle.value = '';
+      exMediaFile.value = '';
+      exMediaLink.value = '';
+      exNotes.value = '';
+      exChangeMode.value = 'avanti';
+      exSeconds.value = 30;
+      exSecondsWrap.classList.add('hidden');
+
+      cdSeconds.value = 30;
+    }
+
+    function fillFormFromSection(s) {
+      typeSelect.value = s.type;
+      switchTypeUI();
+
+      if (s.type === 'countdown') {
+        cdSeconds.value = s.seconds ?? 30;
+        return;
+      }
+
+      exTitle.value = s.title ?? '';
+      exMediaFile.value = '';
+      exMediaLink.value = (s.media && s.media.kind === 'link') ? (s.media.src ?? '') : '';
+      exNotes.value = s.notes ?? '';
+      exChangeMode.value = s.changeMode ?? 'avanti';
+
+      if (exChangeMode.value === 'countdown') {
+        exSecondsWrap.classList.remove('hidden');
+        exSeconds.value = s.seconds ?? 30;
+      } else {
+        exSecondsWrap.classList.add('hidden');
+        exSeconds.value = 30;
+      }
+    }
+
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+    }
+
+    async function readSectionFromForm() {
+      const t = typeSelect.value;
+
+      if (t === 'countdown') {
+        const seconds = parseInt(cdSeconds.value, 10);
+        if (!Number.isFinite(seconds) || seconds < 1) {
+          showError('Inserisci un numero di secondi valido (>= 1).');
+          return null;
+        }
+        return { type: 'countdown', seconds };
+      }
+
+      const title = exTitle.value.trim();
+      const mediaLink = exMediaLink.value.trim();
+      const notes = exNotes.value.trim();
+
+      const changeMode = exChangeMode.value;
+      let seconds = null;
+
+      if (changeMode === 'countdown') {
+        const s = parseInt(exSeconds.value, 10);
+        if (!Number.isFinite(s) || s < 1) {
+          showError('Inserisci un numero di secondi valido (>= 1) per il countdown.');
+          return null;
+        }
+        seconds = s;
+      }
+
+      const file = exMediaFile.files && exMediaFile.files[0] ? exMediaFile.files[0] : null;
+      let media = null;
+
+      if (mediaLink) {
+        media = { kind: 'link', src: mediaLink };
+      } else if (file) {
+        try {
+          const dataUrl = await fileToDataURL(file);
+          if (dataUrl.length > 3_500_000) {
+            showError('Il file è troppo grande per essere salvato. Usa un link o un file più leggero.');
+            return null;
+          }
+          media = { kind: file.type.startsWith('video/') ? 'video' : 'image', src: dataUrl };
+        } catch {
+          showError('Errore nel leggere il file. Riprova oppure usa un link.');
+          return null;
+        }
+      } else if (editingIndex !== null) {
+        media = sections[editingIndex].media ?? null;
+      }
+
+      return {
+        type: 'esercizio',
+        title: title || null,
+        media,
+        notes: notes || null,
+        changeMode,
+        seconds
+      };
+    }
+
+    // =========================
+    // Player
+    // =========================
+    function stopCountdown() {
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = null;
+      countdownOverlay.style.display = 'none';
+    }
+
+    function setMediaContent(section) {
+      playerMedia.innerHTML = '';
+
+      if (!section) {
+        playerTitle.textContent = 'Nessuna sezione';
+        playerMedia.innerHTML = `<div class="player-empty">Aggiungi delle sezioni a sinistra.</div>`;
+        return;
+      }
+
+      if (section.type === 'countdown') {
+        playerTitle.textContent = '';
+        playerMedia.innerHTML = '';
+        return;
+      }
+
+      playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Esercizio';
+
+      const media = section.media;
+      if (!media || !media.src) {
+        playerMedia.innerHTML = `<div class="player-empty">Nessun media inserito.</div>`;
+        return;
+      }
+
+      const src = media.src;
+      const isVideo =
+        media.kind === 'video' ||
+        (media.kind === 'link' && /\.(mp4|webm|ogg)(\?.*)?$/i.test(src));
+
+      if (isVideo) {
+        const v = document.createElement('video');
+        v.src = src;
+        v.controls = true;
+        v.playsInline = true;
+        v.loop = true;
+        v.autoplay = true;
+        v.muted = true;
+        playerMedia.appendChild(v);
+      } else {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = playerTitle.textContent;
+        playerMedia.appendChild(img);
+      }
+    }
+
+    function startCountdown(seconds, onDone) {
+      stopCountdown();
+      countdownRemaining = seconds;
+
+      countdownOverlay.textContent = countdownRemaining;
+      countdownOverlay.style.display = 'flex';
+
+      countdownTimer = setInterval(() => {
+        countdownRemaining--;
+        countdownOverlay.textContent = Math.max(0, countdownRemaining);
+
+        if (countdownRemaining <= 0) {
+          stopCountdown();
+          onDone?.();
+        }
+      }, 1000);
+    }
+
+    function goTo(index) {
+      if (sections.length === 0) return;
+      currentIndex = Math.max(0, Math.min(index, sections.length - 1));
+      renderSections();
+    }
+    function next(){ if (currentIndex < sections.length - 1) goTo(currentIndex + 1); }
+    function back(){ if (currentIndex > 0) goTo(currentIndex - 1); }
+
+    function renderPlayer() {
+      stopCountdown();
+
+      if (sections.length === 0) {
+        backBtn.disabled = true;
+        nextBtn.disabled = true;
+        setMediaContent(null);
+        return;
+      }
+
+      currentIndex = Math.max(0, Math.min(currentIndex, sections.length - 1));
+      const s = sections[currentIndex];
+
+      backBtn.disabled = (currentIndex === 0);
+      nextBtn.disabled = (currentIndex === sections.length - 1);
+      nextBtn.style.display = 'inline-block';
+
+      setMediaContent(s);
+
+      if (s.type === 'countdown') {
+        nextBtn.style.display = 'none';
+        startCountdown(s.seconds ?? 30, () => { if (currentIndex < sections.length - 1) next(); });
+        return;
+      }
+
+      if (s.changeMode === 'countdown') {
+        nextBtn.style.display = 'none';
+        startCountdown(s.seconds ?? 30, () => { if (currentIndex < sections.length - 1) next(); });
+      }
+    }
+
+    // =========================
+    // Render Sezioni
+    // =========================
+    function renderSections() {
+      sectionList.innerHTML = '';
+
+      if (sections.length === 0) {
+        emptyState.style.display = 'block';
+        currentIndex = 0;
+        stopCountdown();
+        renderPlayer();
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      sections.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const top = document.createElement('div');
+        top.className = 'card-top';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = s.type === 'countdown' ? 'Countdown' : 'Esercizio';
+
+        const info = document.createElement('div');
+        info.style.flex = '1';
+
+        const title = document.createElement('p');
+        title.className = 'card-title';
+        title.textContent = formatSectionLabel(s);
+
+        const meta = document.createElement('p');
+        meta.className = 'card-meta';
+        meta.textContent = metaFor(s);
+
+        info.appendChild(title);
+        info.appendChild(meta);
+
+        top.appendChild(badge);
+        top.appendChild(info);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const up = document.createElement('button');
+        up.className = 'icon';
+        up.title = 'Sposta su';
+        up.textContent = '⬆️';
+        up.disabled = (idx === 0);
+        up.onclick = () => {
+          if (idx === 0) return;
+          [sections[idx-1], sections[idx]] = [sections[idx], sections[idx-1]];
+          if (currentIndex === idx) currentIndex = idx - 1;
+          else if (currentIndex === idx - 1) currentIndex = idx;
+          renderSections();
+        };
+
+        const down = document.createElement('button');
+        down.className = 'icon';
+        down.title = 'Sposta giù';
+        down.textContent = '⬇️';
+        down.disabled = (idx === sections.length - 1);
+        down.onclick = () => {
+          if (idx === sections.length - 1) return;
+          [sections[idx+1], sections[idx]] = [sections[idx], sections[idx+1]];
+          if (currentIndex === idx) currentIndex = idx + 1;
+          else if (currentIndex === idx + 1) currentIndex = idx;
+          renderSections();
+        };
+
+        const edit = document.createElement('button');
+        edit.className = 'icon';
+        edit.title = 'Modifica';
+        edit.textContent = '✏️';
+        edit.onclick = () => openModal('edit', idx);
+
+        const del = document.createElement('button');
+        del.className = 'icon danger';
+        del.title = 'Elimina';
+        del.textContent = '🗑';
+        del.onclick = () => {
+          sections.splice(idx, 1);
+          if (currentIndex > idx) currentIndex--;
+          currentIndex = Math.max(0, Math.min(currentIndex, sections.length - 1));
+          renderSections();
+        };
+
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', (e) => {
+          if (e.target && e.target.closest('button')) return;
+          currentIndex = idx;
+          renderSections();
+        });
+
+        actions.appendChild(up);
+        actions.appendChild(down);
+        actions.appendChild(edit);
+        actions.appendChild(del);
+
+        card.appendChild(top);
+        card.appendChild(actions);
+
+        if (idx === currentIndex) {
+          card.style.outline = '2px solid rgba(59,130,246,.55)';
+          card.style.outlineOffset = '2px';
+        }
+
+        sectionList.appendChild(card);
+      });
+
+      renderPlayer();
+    }
+
+    // =========================
+    // Progetti
+    // =========================
+    async function renderProjects() {
+      const projects = await STORAGE.loadProjects();
+      projectList.innerHTML = '';
+
+      if (!projects || projects.length === 0) {
+        noProjects.style.display = 'block';
+        noProjects.textContent = 'Nessun progetto salvato.';
+        return;
+      }
+      noProjects.style.display = 'none';
+
+      projects.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const top = document.createElement('div');
+        top.className = 'card-top';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = 'Progetto';
+
+        const info = document.createElement('div');
+        info.style.flex = '1';
+
+        const title = document.createElement('p');
+        title.className = 'card-title';
+        title.textContent = p.name;
+
+        const meta = document.createElement('p');
+        meta.className = 'card-meta';
+        meta.textContent = `${(p.sections?.length ?? 0)} sezioni`;
+
+        info.appendChild(title);
+        info.appendChild(meta);
+
+        top.appendChild(badge);
+        top.appendChild(info);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'icon';
+        loadBtn.title = 'Carica progetto';
+        loadBtn.textContent = '📂';
+        loadBtn.onclick = async () => {
+          sections = JSON.parse(JSON.stringify(p.sections || []));
+          currentProjectId = p.id;
+          projectNameInput.value = p.name;
+          currentIndex = 0;
+          await setBadge();
+          renderSections();
+          showToast('Progetto caricato');
+        };
+
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'icon';
+        renameBtn.title = 'Rinomina';
+        renameBtn.textContent = '🏷️';
+        renameBtn.onclick = async () => {
+          const newName = prompt('Nuovo nome progetto:', p.name);
+          if (!newName) return;
+
+          const projects2 = await STORAGE.loadProjects();
+          const i = projects2.findIndex(x => x.id === p.id);
+          if (i >= 0) {
+            projects2[i].name = newName.trim() || projects2[i].name;
+            const res = await STORAGE.saveProjects(projects2);
+            if (!res.ok) return showToast('Impossibile rinominare: storage bloccato');
+            if (currentProjectId === p.id) {
+              projectNameInput.value = projects2[i].name;
+              await setBadge();
+            }
+            await renderProjects();
+            showToast('Rinominato');
+          }
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon danger';
+        delBtn.title = 'Elimina progetto';
+        delBtn.textContent = '🗑';
+        delBtn.onclick = async () => {
+          const ok = confirm(`Eliminare il progetto "${p.name}"?`);
+          if (!ok) return;
+
+          const projects2 = (await STORAGE.loadProjects()).filter(x => x.id !== p.id);
+          const res = await STORAGE.saveProjects(projects2);
+          if (!res.ok) return showToast('Impossibile eliminare: storage bloccato');
+
+          if (currentProjectId === p.id) {
+            detachCurrentProject();
+          }
+          await renderProjects();
+          showToast('Progetto eliminato');
+        };
+
+        actions.appendChild(loadBtn);
+        actions.appendChild(renameBtn);
+        actions.appendChild(delBtn);
+
+        card.appendChild(top);
+        card.appendChild(actions);
+
+        projectList.appendChild(card);
+      });
+    }
+
+    async function saveNewProjectAlways() {
+      const name = projectNameInput.value.trim() || 'Senza nome';
+      const projects = await STORAGE.loadProjects();
+
+      const newP = {
+        id: uid(),
+        name,
+        sections: JSON.parse(JSON.stringify(sections)),
+        createdAt: Date.now()
+      };
+      projects.unshift(newP);
+
+      const res = await STORAGE.saveProjects(projects);
+      if (!res.ok) return showToast('Impossibile salvare: storage bloccato');
+
+      currentProjectId = newP.id;
+      await setBadge();
+      await renderProjects();
+      showToast(`Salvato come nuovo (${res.where})`);
+    }
+
+    async function saveCurrentProject() {
+      const name = projectNameInput.value.trim() || 'Senza nome';
+      const projects = await STORAGE.loadProjects();
+
+      // Se NON c'è progetto corrente => crea nuovo (così puoi salvarne infiniti)
+      if (!currentProjectId) {
+        return await saveNewProjectAlways();
+      }
+
+      // Se c'è progetto corrente => aggiorna QUELLO
+      const idx = projects.findIndex(p => p.id === currentProjectId);
+      if (idx >= 0) {
+        projects[idx].name = name;
+        projects[idx].sections = JSON.parse(JSON.stringify(sections));
+        projects[idx].updatedAt = Date.now();
+
+        const res = await STORAGE.saveProjects(projects);
+        if (!res.ok) return showToast('Impossibile salvare: storage bloccato');
+
+        await setBadge();
+        await renderProjects();
+        return showToast(`Progetto aggiornato (${res.where})`);
+      }
+
+      // Se per qualche motivo non lo trova, salva come nuovo
+      currentProjectId = null;
+      await setBadge();
+      return await saveNewProjectAlways();
+    }
+
+    // =========================
+    // Fullscreen
+    // =========================
+    async function toggleFullscreen() {
+      try {
+        if (!document.fullscreenElement) await screen.requestFullscreen();
+        else await document.exitFullscreen();
+      } catch {
+        showToast('Fullscreen non disponibile su questo browser');
+      }
+    }
+    document.addEventListener('fullscreenchange', () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
+    });
+
+    // =========================
+    // Events
+    // =========================
+    addBtn.addEventListener('click', () => openModal('create'));
+    closeModal.addEventListener('click', closeModalFn);
+    cancelBtn.addEventListener('click', closeModalFn);
+
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModalFn(); });
+
+    typeSelect.addEventListener('change', () => { clearError(); switchTypeUI(); });
+    exChangeMode.addEventListener('change', () => { clearError(); switchExerciseModeUI(); });
+
+    saveSectionBtn.addEventListener('click', async () => {
+      clearError();
+      const s = await readSectionFromForm();
+      if (!s) return;
+
+      if (editingIndex === null) sections.push(s);
+      else sections[editingIndex] = s;
+
+      closeModalFn();
+      renderSections();
+      showToast(editingIndex === null ? 'Sezione creata' : 'Sezione modificata');
+    });
+
+    saveProjectBtn.addEventListener('click', saveCurrentProject);
+    saveAsNewBtn.addEventListener('click', saveNewProjectAlways);
+
+    newProjectBtn.addEventListener('click', async () => {
+      const ok = confirm('Iniziare un nuovo progetto? (Le sezioni attuali resteranno solo se le salvi prima)');
+      if (!ok) return;
+
+      sections = [];
+      currentIndex = 0;
+      detachCurrentProject();
+      renderSections();
+      await renderProjects();
+      showToast('Nuovo progetto avviato');
+    });
+
+    backBtn.addEventListener('click', back);
+    nextBtn.addEventListener('click', next);
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // =========================
+    // Init
+    // =========================
+    (async function init(){
+      switchTypeUI();
+      switchExerciseModeUI();
+      await setBadge();
+      renderSections();
+      await renderProjects();
+    })();
+  </script>
+</body>
+</html>
