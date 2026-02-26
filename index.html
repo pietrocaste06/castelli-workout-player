@@ -3,368 +3,469 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sezioni / Player / Progetti</title>
+  <title>Workout Studio Pro (Merged)</title>
   <style>
-    :root{
-      --bg:#f3f4f6;--panel:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;
-      --shadow:0 10px 25px rgba(0,0,0,.08);
-      --btn:#111827;--btnText:#fff;--btn2:#fff;--btn2Text:#111827;
-      --danger:#ef4444; --ok:#16a34a;
-      --focus: 0 0 0 3px rgba(59,130,246,.25);
+    :root {
+      --bg: #000000;
+      --panel: #1c1c1e;
+      --accent: #30d158;
+      --text: #ffffff;
+      --muted: #8e8e93;
+      --border: #38383a;
+      --shadow: 0 8px 22px rgba(0,0,0,0.45);
+      --danger: #ff453a;
+      --ok: #30d158;
+      --focus: 0 0 0 3px rgba(48, 209, 88, .25);
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:var(--bg);color:var(--text);min-height:100vh;display:grid;place-items:center;
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
     }
-    .app{
-      width:min(1200px,95vw);
-      height:min(720px,92vh);
-      display:grid;grid-template-columns:260px 1fr 260px;gap:18px;padding:18px;
+
+    /* Layout Principale */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    .sidebar{
-      background:var(--panel);border:1px solid var(--border);border-radius:14px;
-      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px;
-      overflow:auto;-webkit-overflow-scrolling: touch;
+
+    .header {
+      padding: 18px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
     }
-    .sidebar h2{margin:0;font-size:18px;letter-spacing:.2px}
-    .hint{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
-    .mini{font-size:12px;color:var(--muted)}
-    .row{display:flex;align-items:center;gap:10px}
-    .grow{flex:1}
-    button{
-      appearance:none;border:1px solid var(--border);background:var(--btn2);color:var(--btn2Text);
-      border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;
+    .header h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: .2px; }
+    .header .subtitle {
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+    }
+
+    .content-area { flex: 1; overflow-y: auto; padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+    .list-container { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Tab Bar */
+    .tab-bar {
+      position: fixed; bottom: 0; width: 100%; height: 70px;
+      background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 1000;
+    }
+    .tab-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--muted); cursor: pointer; transition: 0.2s;
+      user-select: none;
+    }
+    .tab-item.active { color: var(--accent); }
+    .tab-icon { font-size: 22px; margin-bottom: 4px; }
+    .tab-label { font-size: 10px; font-weight: 800; letter-spacing: .4px; }
+
+    /* Cards / Liste */
+    .card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .card.active { outline: 2px solid rgba(48, 209, 88, .55); outline-offset: 2px; }
+    .card-info { display: flex; gap: 12px; align-items: center; }
+    .preview-thumb {
+      width: 52px; height: 52px; border-radius: 10px; background: #333;
+      object-fit: cover; border: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+    .card-text h3 { margin: 0; font-size: 16px; font-weight: 900; }
+    .card-text p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
       touch-action: manipulation;
     }
-    button.primary{background:var(--btn);color:var(--btnText);border-color:transparent}
-    button.ok{background:var(--ok);color:#fff;border-color:transparent}
-    button.danger{background:var(--danger);color:#fff;border-color:transparent}
-    button:focus{outline:none;box-shadow:var(--focus)}
-    button.icon{
-      width:40px;height:40px;padding:0;display:grid;place-items:center;
-      font-size:16px;line-height:1;border-radius:12px;
+    button:focus { outline: none; box-shadow: var(--focus); }
+    .btn-main {
+      background: var(--accent);
+      color: #000;
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 16px;
+      border-color: rgba(0,0,0,.12);
     }
-    button.icon:disabled{opacity:.45;cursor:not-allowed}
-    input, textarea, select{
-      width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;
-      font:inherit;background:#fff;
-    }
-    input:focus, textarea:focus, select:focus{outline:none;box-shadow:var(--focus)}
-    textarea{min-height:90px;resize:vertical}
-    .divider{height:1px;background:var(--border);margin:8px 0}
-    .section-list,.project-list{display:flex;flex-direction:column;gap:10px}
-    .card{
-      border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff;
-      display:flex;flex-direction:column;gap:8px;
-    }
-    .card-top{display:flex;align-items:flex-start;gap:8px}
-    .badge{
-      font-size:12px;font-weight:900;color:#111827;background:#f3f4f6;border:1px solid var(--border);
-      padding:3px 8px;border-radius:999px;white-space:nowrap;
-    }
-    .card-title{font-weight:900;font-size:14px;margin:0}
-    .card-meta{font-size:12px;color:var(--muted);margin:0}
-    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+    .btn-icon { background: #3a3a3c; color: #fff; border-color: rgba(255,255,255,.06); }
+    .btn-danger { background: rgba(255, 69, 58, 0.16); color: var(--danger); border-color: rgba(255, 69, 58, 0.20); }
+    .btn-ok { background: rgba(48, 209, 88, .18); color: var(--ok); border-color: rgba(48, 209, 88, .25); }
+    .btn-ghost { background: rgba(255,255,255,.06); color: #fff; border-color: rgba(255,255,255,.08); }
 
-    /* PLAYER */
-    .screen-wrap{display:grid;place-items:center;background:transparent; position:relative}
-    .screen{
-      width:min(680px,100%);
-      height:min(520px,100%);
-      background:#000;border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:0 18px 40px rgba(0,0,0,.25);
-      position:relative;overflow:hidden;
-      display:flex;align-items:center;justify-content:center;
+    .row { display:flex; gap:10px; align-items:center; }
+    .grow { flex: 1; }
+
+    input, select, textarea {
+      width: 100%;
+      background: #2c2c2e;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 12px;
+      border-radius: 14px;
+      margin: 8px 0;
+      font: inherit;
+    }
+    input:focus, select:focus, textarea:focus { outline:none; box-shadow: var(--focus); }
+    textarea { min-height: 92px; resize: vertical; }
+
+    .hint { color: var(--muted); font-size: 12px; margin: 0; line-height: 1.4; }
+    .pill {
+      display:inline-flex; align-items:center; gap:8px;
+      border: 1px dashed rgba(255,255,255,.14);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,.05);
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Player */
+    .player-view { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
+    .screen {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0,0,0,.45);
+      transform: translateZ(0);
     }
     .screen::before{
-      content:"";position:absolute;inset:0;
-      background:linear-gradient(to bottom,rgba(255,255,255,.08),rgba(255,255,255,0) 28%,rgba(255,255,255,.04));
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(to bottom, rgba(255,255,255,.10), rgba(255,255,255,0) 30%, rgba(255,255,255,.04));
       pointer-events:none;
     }
-
-    .player-title{
-      position:absolute;left:12px;right:12px;top:12px;
-      color:#fff;font-weight:900;font-size:18px;
-      text-shadow:0 2px 10px rgba(0,0,0,.45);
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      pointer-events:none;
+    .player-title {
+      position:absolute; left:15px; top:15px;
+      font-weight: 900;
+      text-shadow: 2px 2px 6px rgba(0,0,0,.75);
+      max-width: 62%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      z-index: 2;
     }
-    .player-title .title-text{
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-      pointer-events:none;
+    .timer-display {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(0,0,0,0.55);
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 18px;
+      color: var(--accent);
+      z-index: 2;
     }
-    .player-controls-top{pointer-events:auto;display:flex;gap:8px;}
-    .player-btn-top{
-      border:none;background:rgba(255,255,255,.14);color:#fff;
-      padding:10px 12px;border-radius:12px;font-weight:900;
-      backdrop-filter: blur(6px);
+    .player-media {
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 54px 12px 70px;
+      z-index: 1;
+      position: relative;
     }
-
-    .player-media{
-      width:100%;height:100%;
-      display:flex;align-items:center;justify-content:center;
-      padding:56px 12px 78px;
+    .player-media img, .player-media video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
     }
-    .player-media img,.player-media video{
-      max-width:100%;max-height:100%;
-      object-fit:contain;border-radius:12px;
-    }
-    .player-empty{
-      color:rgba(255,255,255,.85);
-      text-align:center;padding:20px;max-width:90%;
-    }
-
-    .player-bottom{
-      position:absolute;left:12px;right:12px;bottom:12px;
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      pointer-events:auto;
-    }
-    .player-nav{
-      border:none;background:rgba(255,255,255,.14);color:#fff;
-      padding:14px 16px;border-radius:14px;font-weight:900;
-      backdrop-filter: blur(6px);min-width:120px;
-    }
-    .player-nav:disabled{opacity:.45}
+    .player-empty { color: var(--muted); font-weight: 700; text-align:center; padding: 16px; }
 
     .countdown-overlay{
-      position:absolute;inset:0;display:none;
-      align-items:center;justify-content:center;
-      color:#fff;font-weight:1000;font-size:72px;
-      text-shadow:0 2px 20px rgba(0,0,0,.55);
-      pointer-events:none;
+      position:absolute; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      font-size: 84px;
+      font-weight: 1000;
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      text-shadow: 0 2px 18px rgba(0,0,0,.7);
+      z-index: 3;
+      pointer-events: none;
     }
+
+    .player-bottom {
+      position:absolute;
+      left: 12px; right: 12px; bottom: 12px;
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 4;
+    }
+
+    /* Timeline */
+    .timeline {
+      width: 100%;
+      overflow-x: auto;
+      display: flex;
+      gap: 6px;
+      padding: 10px 2px;
+      scrollbar-width: none;
+    }
+    .timeline::-webkit-scrollbar { display:none; }
+    .timeline-item {
+      min-width: 84px;
+      height: 48px;
+      background: #3a3a3c;
+      border-radius: 10px;
+      flex-shrink: 0;
+      font-size: 10px;
+      padding: 6px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      border: 1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.9);
+      user-select: none;
+    }
+    .timeline-item.active {
+      border-color: rgba(48, 209, 88, .9);
+      background: #48484a;
+    }
+
+    .btn-avvia {
+      background: linear-gradient(135deg, #30d158, #28a745);
+      color: #000;
+      padding: 18px 54px;
+      border-radius: 40px;
+      font-size: 18px;
+      box-shadow: 0 12px 32px rgba(48, 209, 88, 0.25);
+      transform: scale(1);
+      transition: 0.15s;
+      border: 1px solid rgba(0,0,0,.12);
+    }
+    .btn-avvia:active { transform: scale(0.97); }
 
     /* Modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);
-      display:none;align-items:center;justify-content:center;padding:18px;}
-    .modal{width:min(560px, 96vw);background:#fff;border-radius:16px;border:1px solid var(--border);
-      box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden;}
-    .modal header{padding:14px 16px;border-bottom:1px solid var(--border);
-      display:flex;align-items:center;justify-content:space-between;gap:10px;}
-    .modal h3{margin:0;font-size:16px}
-    .modal .content{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
-    .modal footer{padding:14px 16px;border-top:1px solid var(--border);
-      display:flex;gap:10px;justify-content:flex-end;}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .hidden{display:none !important}
+    .hidden { display: none !important; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal {
+      background: var(--panel);
+      width: 92%;
+      max-width: 540px;
+      border-radius: 24px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,.06);
+      box-shadow: 0 20px 55px rgba(0,0,0,.55);
+    }
+    .modal h2 { margin: 0 0 8px; font-size: 18px; font-weight: 1000; }
+    .modal .err { color: var(--danger); font-weight: 800; font-size: 12px; display:none; }
 
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--border);
-      border-radius:999px;padding:6px 10px;background:#fafafa;font-size:12px;color:var(--muted);
-      max-width:100%;
+    /* Toast */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(86px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      background: rgba(28,28,30,0.95);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 900;
+      font-size: 13px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      display: none;
+      z-index: 2500;
+      max-width: 92vw;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.08);
     }
 
-    .toast{
-      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
-      background:#111827;color:#fff;border-radius:999px;
-      padding:10px 14px;font-weight:800;font-size:13px;
-      box-shadow:0 12px 30px rgba(0,0,0,.22);
-      display:none;z-index:50;max-width:92vw;text-align:center;
-    }
-
-    /* Portrait (telefono in verticale): impila */
-@media (orientation: portrait) and (max-width: 900px){
-  body{place-items:stretch}
-  .app{
-    width:100vw;height:100vh;
-    grid-template-columns:1fr;
-    grid-template-rows:auto 1fr auto;
-    gap:12px;padding:12px;
-  }
-  .screen{width:100%;height:55vh;border-radius:16px}
-  .player-nav{min-width:44vw}
-}
-
-/* Landscape (telefono in orizzontale): 3 colonne come su PC */
-@media (orientation: landscape) and (max-width: 950px){
-  body{place-items:stretch}
-  .app{
-    width:100vw;height:100vh;
-    grid-template-columns: 240px 1fr 240px;
-    grid-template-rows: 1fr;
-    gap:10px;
-    padding:10px;
-  }
-  .screen{
-    width:100%;
-    height:100%;
-    border-radius:16px;
-  }
-  .player-media{
-    padding:52px 10px 72px; /* leggermente più compatto */
-  }
-  .player-nav{
-    min-width: 140px; /* bottoni più stabili */
-    padding:12px 14px;
-  }
-}
-/* iOS: riduce bug di click su layer con blur */
-.player-btn-top, .player-nav {
-  -webkit-tap-highlight-color: transparent;
-}
-.screen, .player-bottom, .player-controls-top {
-  transform: translateZ(0);
-}
-    @supports(padding: max(0px)){
-      .app{padding-bottom: max(12px, env(safe-area-inset-bottom))}
-    }
     /* ===== PSEUDO FULLSCREEN (iPhone friendly) ===== */
-.pseudo-fullscreen {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  z-index: 9999 !important;
-}
-.hide-when-pseudo {
-  display: none !important;
-}
+    .pseudo-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      z-index: 9999 !important;
+    }
+    .hide-when-pseudo { display: none !important; }
+
+    /* iOS click/blur fix */
+    .screen, .player-bottom { transform: translateZ(0); }
   </style>
 </head>
-
 <body>
-  <main class="app">
-    <!-- Sinistra -->
-    <aside class="sidebar" aria-label="Sezioni">
-      <div class="row" style="align-items:flex-end">
-        <div class="grow">
-          <h2>Sezioni</h2>
-          <div id="projectBadge" class="pill" title="Progetto corrente">Progetto: (non salvato)</div>
-        </div>
-        <button id="addBtn" class="icon primary" title="Aggiungi sezione" aria-label="Aggiungi sezione">+</button>
-      </div>
 
-      <div class="divider"></div>
+  <div class="app-container">
+    <header class="header" id="appHeader">
+      <h1 id="pageTitle">PROGETTI</h1>
+      <div id="pageSubtitle" class="subtitle">I tuoi allenamenti</div>
+    </header>
 
-      <div id="sectionList" class="section-list"></div>
-      <p id="emptyState" class="hint">Nessuna sezione ancora. Premi “+” per crearne una.</p>
-    </aside>
+    <main class="content-area" id="contentArea">
+      <!-- PROGETTI -->
+      <div id="view-progetti" class="list-container">
+        <div class="card">
+          <div class="row" style="align-items:flex-start">
+            <div class="grow">
+              <div class="pill" id="projectBadge" title="Progetto corrente">Progetto: (nuovo)</div>
+              <p class="hint" style="margin-top:10px">
+                <b>Salva</b> aggiorna il progetto caricato. Se non hai caricato nulla, salva come nuovo.
+              </p>
+            </div>
+          </div>
 
-    <!-- Centro -->
-    <section class="screen-wrap" aria-label="Schermo centrale">
-      <div id="screen" class="screen" aria-label="Player">
-        <div class="player-title">
-          <div id="playerTitle" class="title-text">Nessuna sezione</div>
-          <div class="player-controls-top">
-            <button id="fullscreenBtn" class="player-btn-top" title="Schermo intero">⛶</button>
+          <label style="font-weight:900; font-size:12px; color:rgba(255,255,255,.85)">
+            Nome progetto
+            <input id="projectName" type="text" placeholder="Nome progetto..." />
+          </label>
+
+          <div class="btn-group">
+            <button id="saveProjectBtn" class="btn-ok">💾 Salva</button>
+            <button id="saveAsNewBtn" class="btn-ghost">🧷 Salva come nuovo</button>
+            <button id="newProjectBtn" class="btn-icon">➕ Nuovo</button>
           </div>
         </div>
 
-        <div id="playerMedia" class="player-media">
-          <div class="player-empty">
-            Aggiungi delle sezioni a sinistra.<br/>
-            Poi usa <b>Avanti</b> / <b>Indietro</b>.
+        <div id="projectList"></div>
+        <p id="noProjects" class="hint">Nessun progetto salvato.</p>
+      </div>
+
+      <!-- SEZIONI -->
+      <div id="view-sezioni" class="list-container hidden">
+        <button class="btn-main" id="addSectionBtn">+ Aggiungi Sezione</button>
+        <div id="sectionList"></div>
+        <p id="emptyState" class="hint">Nessuna sezione ancora. Premi “Aggiungi Sezione”.</p>
+      </div>
+
+      <!-- SCHERMO -->
+      <div id="view-schermo" class="player-view hidden">
+        <div id="mainScreen" class="screen" aria-label="Player">
+          <div id="playerTitle" class="player-title">Nessun progetto</div>
+          <div id="timerDisplay" class="timer-display">00:00</div>
+
+          <div id="playerMedia" class="player-media">
+            <div class="player-empty">Seleziona un progetto e poi vai su <b>SEZIONI</b> o <b>SCHERMO</b>.</div>
+          </div>
+
+          <div id="countdownOverlay" class="countdown-overlay">3</div>
+
+          <div class="player-bottom">
+            <button class="btn-icon" id="backBtn">◀</button>
+            <button class="btn-icon" id="fullscreenBtn">⛶</button>
+            <button class="btn-icon" id="nextBtn">▶</button>
           </div>
         </div>
 
-        <div id="countdownOverlay" class="countdown-overlay">3</div>
+        <div class="timeline" id="timelineBar"></div>
 
-        <div class="player-bottom">
-          <button id="backBtn" class="player-nav" disabled>◀ Indietro</button>
-          <button id="nextBtn" class="player-nav" disabled>Avanti ▶</button>
-        </div>
+        <button class="btn-avvia" id="btnAvviaWorkout">AVVIA</button>
+        <p class="hint" style="text-align:center; max-width: 520px">
+          “AVVIA” fa partire il timer allenamento. Le sezioni con countdown avanzano da sole.
+        </p>
       </div>
-    </section>
+    </main>
 
-    <!-- Destra -->
-    <aside class="sidebar" aria-label="Progetti">
-      <div class="row" style="align-items:flex-end">
-        <div class="grow">
-          <h2>Progetti</h2>
-          <p class="mini" style="margin:6px 0 0">Premi “+ Nuovo” per iniziare un progetto nuovo.</p>
-        </div>
-        <button id="newProjectBtn" class="icon primary" title="Nuovo progetto" aria-label="Nuovo progetto">+</button>
+    <nav class="tab-bar" id="tabBar">
+      <div class="tab-item active" data-tab="progetti">
+        <span class="tab-icon">📁</span>
+        <span class="tab-label">PROGETTI</span>
       </div>
-
-      <div class="row">
-        <input id="projectName" class="grow" type="text" placeholder="Nome progetto..." />
-        <button id="saveProjectBtn" class="ok" title="Salva (aggiorna se caricato)">Salva</button>
+      <div class="tab-item" data-tab="sezioni">
+        <span class="tab-icon">✏️</span>
+        <span class="tab-label">SEZIONI</span>
       </div>
-
-      <div class="row">
-        <button id="saveAsNewBtn" class="primary" title="Salva sempre come nuovo">Salva come nuovo</button>
+      <div class="tab-item" data-tab="schermo">
+        <span class="tab-icon">📺</span>
+        <span class="tab-label">SCHERMO</span>
       </div>
+    </nav>
+  </div>
 
-      <div class="divider"></div>
-
-      <div id="projectList" class="project-list"></div>
-      <p id="noProjects" class="hint">Nessun progetto salvato.</p>
-    </aside>
-  </main>
-
-  <!-- Modal sezione -->
+  <!-- MODAL SEZIONE -->
   <div id="backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
-      <header>
-        <h3 id="modalTitle">Nuova sezione</h3>
-        <button id="closeModal" class="icon" aria-label="Chiudi">×</button>
-      </header>
+      <h2 id="modalTitle">Nuova Sezione</h2>
 
-      <div class="content">
-        <label>
-          Tipo sezione
-          <select id="typeSelect">
-            <option value="esercizio">Esercizio</option>
-            <option value="countdown">Countdown</option>
+      <label style="font-weight:900; font-size:12px; color:rgba(255,255,255,.85)">
+        Tipo sezione
+        <select id="typeSelect">
+          <option value="esercizio">Esercizio</option>
+          <option value="countdown">Countdown (Riposo)</option>
+        </select>
+      </label>
+
+      <div id="formEsercizio">
+        <input id="exTitle" type="text" placeholder="Titolo (es. Push up)" />
+        <input id="exMediaFile" type="file" accept="image/*,video/*,.gif" />
+        <input id="exMediaLink" type="url" placeholder="Link media (consigliato per file pesanti)" />
+        <textarea id="exNotes" placeholder="Note..."></textarea>
+
+        <label style="font-weight:900; font-size:12px; color:rgba(255,255,255,.85)">
+          Cambio schermata
+          <select id="exChangeMode">
+            <option value="avanti">Manuale (tasto avanti)</option>
+            <option value="countdown">Automatico (countdown)</option>
           </select>
         </label>
 
-        <div id="formEsercizio">
-          <label>
-            Titolo (facoltativo)
-            <input id="exTitle" type="text" placeholder="Es. Push up" />
-          </label>
-
-          <div class="grid2">
-            <label>
-              Media (facoltativo)
-              <input id="exMediaFile" type="file" accept="image/*,video/*,.gif" />
-              <div class="mini">File verrà salvato nel progetto se non è troppo grande.</div>
-            </label>
-
-            <label>
-              Link media (facoltativo)
-              <input id="exMediaLink" type="url" placeholder="https://..." />
-              <div class="mini">Consigliato per file pesanti.</div>
-            </label>
-          </div>
-
-          <label>
-            Note (facoltativo)
-            <textarea id="exNotes" placeholder="Scrivi eventuali note..."></textarea>
-          </label>
-
-          <label>
-            Cambio schermata
-            <select id="exChangeMode">
-              <option value="avanti">Tasto avanti</option>
-              <option value="countdown">Countdown</option>
-            </select>
-          </label>
-
-          <label id="exSecondsWrap" class="hidden">
-            Secondi countdown
-            <input id="exSeconds" type="number" min="1" step="1" value="30" />
-          </label>
+        <div id="exSecondsWrap" class="hidden">
+          <input id="exSeconds" type="number" min="1" step="1" value="30" placeholder="Secondi countdown" />
         </div>
-
-        <div id="formCountdown" class="hidden">
-          <label>
-            Secondi countdown
-            <input id="cdSeconds" type="number" min="1" step="1" value="30" />
-          </label>
-        </div>
-
-        <p id="errorMsg" class="mini" style="color: var(--danger); display:none;"></p>
       </div>
 
-      <footer>
-        <button id="cancelBtn">Annulla</button>
-        <button id="saveSectionBtn" class="primary">Crea</button>
-      </footer>
+      <div id="formCountdown" class="hidden">
+        <input id="cdTitle" type="text" placeholder="Nome countdown (es. Riposo)" value="Riposo" />
+        <input id="cdSeconds" type="number" min="1" step="1" value="30" placeholder="Secondi" />
+      </div>
+
+      <div id="errorMsg" class="err"></div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn-icon" style="flex:1" id="cancelBtn">Annulla</button>
+        <button class="btn-main" style="flex:1; margin:0" id="saveSectionBtn">Salva</button>
+      </div>
     </div>
   </div>
 
@@ -372,7 +473,7 @@
 
   <script>
     // =========================
-    // Robust storage: IndexedDB -> localStorage fallback
+    // Robust storage: IndexedDB -> localStorage fallback (da index.html)
     // =========================
     const STORAGE = (() => {
       const DB_NAME = 'castelli_db_v2';
@@ -463,8 +564,14 @@
     // =========================
     // DOM
     // =========================
-    const sectionList = document.getElementById('sectionList');
-    const emptyState = document.getElementById('emptyState');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
+
+    const viewProgetti = document.getElementById('view-progetti');
+    const viewSezioni = document.getElementById('view-sezioni');
+    const viewSchermo = document.getElementById('view-schermo');
+
+    const tabItems = Array.from(document.querySelectorAll('.tab-item'));
 
     const projectList = document.getElementById('projectList');
     const noProjects = document.getElementById('noProjects');
@@ -474,23 +581,26 @@
     const newProjectBtn = document.getElementById('newProjectBtn');
     const projectBadge = document.getElementById('projectBadge');
 
-    const screen = document.getElementById('screen');
+    const addSectionBtn = document.getElementById('addSectionBtn');
+    const sectionList = document.getElementById('sectionList');
+    const emptyState = document.getElementById('emptyState');
+
+    const screen = document.getElementById('mainScreen');
     const playerTitle = document.getElementById('playerTitle');
     const playerMedia = document.getElementById('playerMedia');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const countdownOverlay = document.getElementById('countdownOverlay');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
-
-    const toast = document.getElementById('toast');
+    const btnAvviaWorkout = document.getElementById('btnAvviaWorkout');
 
     const backdrop = document.getElementById('backdrop');
-    const addBtn = document.getElementById('addBtn');
-    const closeModal = document.getElementById('closeModal');
+    const modalTitle = document.getElementById('modalTitle');
     const cancelBtn = document.getElementById('cancelBtn');
     const saveSectionBtn = document.getElementById('saveSectionBtn');
     const errorMsg = document.getElementById('errorMsg');
-    const modalTitle = document.getElementById('modalTitle');
 
     const typeSelect = document.getElementById('typeSelect');
     const formEsercizio = document.getElementById('formEsercizio');
@@ -503,16 +613,30 @@
     const exChangeMode = document.getElementById('exChangeMode');
     const exSecondsWrap = document.getElementById('exSecondsWrap');
     const exSeconds = document.getElementById('exSeconds');
+
+    const cdTitle = document.getElementById('cdTitle');
     const cdSeconds = document.getElementById('cdSeconds');
+
+    const timelineBar = document.getElementById('timelineBar');
+
+    const toast = document.getElementById('toast');
 
     // =========================
     // State
     // =========================
     let sections = [];
     let editingIndex = null;
+
     let currentProjectId = null;
+    let currentProjectName = 'Nuovo Progetto';
 
     let currentIndex = 0;
+
+    // Workout timer
+    let workoutTimer = null;
+    let workoutSeconds = 0;
+
+    // Countdown
     let countdownTimer = null;
     let countdownRemaining = 0;
 
@@ -525,7 +649,7 @@
       toast.textContent = msg;
       toast.style.display = 'block';
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.style.display = 'none', 2400);
+      showToast._t = setTimeout(() => toast.style.display = 'none', 2200);
     }
 
     // =========================
@@ -535,7 +659,7 @@
     function showError(msg){ errorMsg.textContent=msg; errorMsg.style.display='block'; }
 
     function formatSectionLabel(s) {
-      if (s.type === 'countdown') return `Countdown • ${s.seconds}s`;
+      if (s.type === 'countdown') return `${(s.title && s.title.trim()) ? s.title.trim() : 'Countdown'} • ${s.seconds}s`;
       const title = (s.title && s.title.trim()) ? s.title.trim() : 'Esercizio';
       const mode = s.changeMode === 'avanti' ? 'Avanti' : `Countdown ${s.seconds}s`;
       return `${title} • ${mode}`;
@@ -543,6 +667,7 @@
 
     function metaFor(s) {
       const parts = [];
+      if (s.type === 'countdown') parts.push('Riposo');
       if (s.media && s.media.kind) parts.push(`Media: ${s.media.kind}`);
       if (s.notes) parts.push('Note: sì');
       return parts.length ? parts.join(' • ') : 'Nessun dettaglio aggiuntivo';
@@ -559,49 +684,50 @@
     }
 
     function detachCurrentProject() {
-      currentProjectId = null;     // <-- IMPORTANT: così "Salva" crea un nuovo progetto
-      projectNameInput.value = ''; // nome vuoto (utente lo mette)
+      currentProjectId = null;
+      currentProjectName = 'Nuovo Progetto';
+      projectNameInput.value = '';
       setBadge();
     }
+
+    // =========================
+    // Tabs
+    // =========================
+    function switchTab(tab) {
+      tabItems.forEach(i => i.classList.toggle('active', i.dataset.tab === tab));
+      viewProgetti.classList.toggle('hidden', tab !== 'progetti');
+      viewSezioni.classList.toggle('hidden', tab !== 'sezioni');
+      viewSchermo.classList.toggle('hidden', tab !== 'schermo');
+
+      if (tab === 'progetti') {
+        pageTitle.innerText = "PROGETTI";
+        pageSubtitle.innerText = "I tuoi allenamenti";
+        renderProjects();
+      } else if (tab === 'sezioni') {
+        pageTitle.innerText = "SEZIONI";
+        pageSubtitle.innerText = "Editor: " + currentProjectName;
+        renderSections();
+      } else {
+        pageTitle.innerText = "SCHERMO";
+        pageSubtitle.innerText = "Visualizzazione: " + currentProjectName;
+        renderPlayer();
+        renderTimeline();
+      }
+    }
+
+    tabItems.forEach(item => item.addEventListener('click', () => switchTab(item.dataset.tab)));
 
     // =========================
     // Modal
     // =========================
     function switchTypeUI() {
       const t = typeSelect.value;
-      if (t === 'esercizio') {
-        formEsercizio.classList.remove('hidden');
-        formCountdown.classList.add('hidden');
-      } else {
-        formEsercizio.classList.add('hidden');
-        formCountdown.classList.remove('hidden');
-      }
+      formEsercizio.classList.toggle('hidden', t !== 'esercizio');
+      formCountdown.classList.toggle('hidden', t !== 'countdown');
     }
     function switchExerciseModeUI() {
-      if (exChangeMode.value === 'countdown') exSecondsWrap.classList.remove('hidden');
-      else exSecondsWrap.classList.add('hidden');
-    }
-
-    function openModal(mode, idx = null) {
-      clearError();
-      backdrop.style.display = 'flex';
-      editingIndex = (mode === 'edit') ? idx : null;
-
-      if (editingIndex === null) {
-        modalTitle.textContent = 'Nuova sezione';
-        saveSectionBtn.textContent = 'Crea';
-        resetFormDefaults();
-      } else {
-        modalTitle.textContent = 'Modifica sezione';
-        saveSectionBtn.textContent = 'Salva modifiche';
-        fillFormFromSection(sections[editingIndex]);
-      }
-      setTimeout(() => typeSelect.focus(), 0);
-    }
-
-    function closeModalFn() {
-      backdrop.style.display = 'none';
-      editingIndex = null;
+      const m = exChangeMode.value;
+      exSecondsWrap.classList.toggle('hidden', m !== 'countdown');
     }
 
     function resetFormDefaults() {
@@ -616,6 +742,7 @@
       exSeconds.value = 30;
       exSecondsWrap.classList.add('hidden');
 
+      cdTitle.value = 'Riposo';
       cdSeconds.value = 30;
     }
 
@@ -624,6 +751,7 @@
       switchTypeUI();
 
       if (s.type === 'countdown') {
+        cdTitle.value = s.title ?? 'Riposo';
         cdSeconds.value = s.seconds ?? 30;
         return;
       }
@@ -643,6 +771,30 @@
       }
     }
 
+    function openModal(mode, idx = null) {
+      clearError();
+      backdrop.style.display = 'flex';
+      editingIndex = (mode === 'edit') ? idx : null;
+
+      if (editingIndex === null) {
+        modalTitle.textContent = 'Nuova Sezione';
+        resetFormDefaults();
+      } else {
+        modalTitle.textContent = 'Modifica Sezione';
+        fillFormFromSection(sections[editingIndex]);
+      }
+    }
+
+    function closeModalFn() {
+      backdrop.style.display = 'none';
+      editingIndex = null;
+    }
+
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModalFn(); });
+    cancelBtn.addEventListener('click', closeModalFn);
+    typeSelect.addEventListener('change', () => { clearError(); switchTypeUI(); });
+    exChangeMode.addEventListener('change', () => { clearError(); switchExerciseModeUI(); });
+
     function fileToDataURL(file) {
       return new Promise((resolve, reject) => {
         const fr = new FileReader();
@@ -661,7 +813,8 @@
           showError('Inserisci un numero di secondi valido (>= 1).');
           return null;
         }
-        return { type: 'countdown', seconds };
+        const title = cdTitle.value.trim() || 'Riposo';
+        return { type: 'countdown', title, seconds };
       }
 
       const title = exTitle.value.trim();
@@ -711,8 +864,23 @@
       };
     }
 
+    saveSectionBtn.addEventListener('click', async () => {
+      clearError();
+      const s = await readSectionFromForm();
+      if (!s) return;
+
+      if (editingIndex === null) sections.push(s);
+      else sections[editingIndex] = s;
+
+      closeModalFn();
+      renderSections();
+      showToast(editingIndex === null ? 'Sezione creata' : 'Sezione modificata');
+    });
+
+    addSectionBtn.addEventListener('click', () => openModal('create'));
+
     // =========================
-    // Player
+    // Player logic (da index.html, adattata)
     // =========================
     function stopCountdown() {
       if (countdownTimer) clearInterval(countdownTimer);
@@ -724,14 +892,14 @@
       playerMedia.innerHTML = '';
 
       if (!section) {
-        playerTitle.textContent = 'Nessuna sezione';
-        playerMedia.innerHTML = `<div class="player-empty">Aggiungi delle sezioni a sinistra.</div>`;
+        playerTitle.textContent = 'Nessun progetto';
+        playerMedia.innerHTML = `<div class="player-empty">Seleziona un progetto.</div>`;
         return;
       }
 
       if (section.type === 'countdown') {
-        playerTitle.textContent = '';
-        playerMedia.innerHTML = '';
+        playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Countdown';
+        playerMedia.innerHTML = `<div class="player-empty">Riposo / Countdown</div>`;
         return;
       }
 
@@ -786,18 +954,28 @@
     function goTo(index) {
       if (sections.length === 0) return;
       currentIndex = Math.max(0, Math.min(index, sections.length - 1));
-      renderSections();
+      renderSections(); // mantiene highlight e aggiorna player/timeline
+      if (!viewSchermo.classList.contains('hidden')) renderTimeline();
     }
+
     function next(){ if (currentIndex < sections.length - 1) goTo(currentIndex + 1); }
     function back(){ if (currentIndex > 0) goTo(currentIndex - 1); }
 
     function renderPlayer() {
       stopCountdown();
 
-      if (sections.length === 0) {
+      if (!currentProjectId && sections.length === 0) {
         backBtn.disabled = true;
         nextBtn.disabled = true;
         setMediaContent(null);
+        return;
+      }
+
+      if (sections.length === 0) {
+        backBtn.disabled = true;
+        nextBtn.disabled = true;
+        playerTitle.textContent = currentProjectName;
+        playerMedia.innerHTML = `<div class="player-empty">Nessuna sezione. Vai su <b>SEZIONI</b> e aggiungine una.</div>`;
         return;
       }
 
@@ -806,7 +984,7 @@
 
       backBtn.disabled = (currentIndex === 0);
       nextBtn.disabled = (currentIndex === sections.length - 1);
-      nextBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'inline-flex';
 
       setMediaContent(s);
 
@@ -822,9 +1000,47 @@
       }
     }
 
+    function renderTimeline() {
+      timelineBar.innerHTML = sections.map((s, i) => {
+        const label = (s.type === 'esercizio') ? 'EX' : 'REST';
+        const secs = (s.type === 'countdown') ? (s.seconds ?? '--') : ((s.changeMode === 'countdown') ? (s.seconds ?? '--') : '--');
+        const title = (s.type === 'countdown') ? (s.title || 'Riposo') : (s.title || 'Esercizio');
+        return `
+          <div class="timeline-item ${i === currentIndex ? 'active' : ''}" onclick="window.__goTo(${i})">
+            ${label} • ${secs}s<br>${escapeHtml(title).slice(0, 14)}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Expose goTo for inline onclick in timeline
+    window.__goTo = goTo;
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[s]));
+    }
+
     // =========================
     // Render Sezioni
     // =========================
+    function previewFor(s){
+      if (!s) return '';
+      if (s.type === 'countdown') return '';
+      const media = s.media;
+      if (!media || !media.src) return '';
+      const src = media.src;
+
+      const isVideo =
+        media.kind === 'video' ||
+        (media.kind === 'link' && /\.(mp4|webm|ogg)(\?.*)?$/i.test(src));
+
+      // Per video usiamo sempre placeholder
+      if (isVideo) return '';
+      return src;
+    }
+
     function renderSections() {
       sectionList.innerHTML = '';
 
@@ -833,124 +1049,112 @@
         currentIndex = 0;
         stopCountdown();
         renderPlayer();
+        renderTimeline();
         return;
       }
       emptyState.style.display = 'none';
 
       sections.forEach((s, idx) => {
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = 'card' + (idx === currentIndex ? ' active' : '');
 
         const top = document.createElement('div');
-        top.className = 'card-top';
+        top.className = 'card-info';
 
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = s.type === 'countdown' ? 'Countdown' : 'Esercizio';
+        const img = document.createElement('img');
+        img.className = 'preview-thumb';
+
+        const pv = previewFor(s);
+        if (pv) img.src = pv;
+        else img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+            <rect width="100%" height="100%" fill="#2c2c2e"/>
+            <text x="50%" y="54%" font-family="Arial" font-size="22" fill="#8e8e93" text-anchor="middle">${s.type === 'countdown' ? '⏱' : '🏋️'}</text>
+           </svg>`
+        );
 
         const info = document.createElement('div');
+        info.className = 'card-text';
         info.style.flex = '1';
 
-        const title = document.createElement('p');
-        title.className = 'card-title';
-        title.textContent = formatSectionLabel(s);
+        const h3 = document.createElement('h3');
+        h3.textContent = (s.type === 'esercizio')
+          ? ((s.title && s.title.trim()) ? s.title.trim() : 'Esercizio')
+          : ((s.title && s.title.trim()) ? s.title.trim() : 'Riposo');
 
-        const meta = document.createElement('p');
-        meta.className = 'card-meta';
-        meta.textContent = metaFor(s);
+        const p = document.createElement('p');
+        p.textContent = formatSectionLabel(s) + ' • ' + metaFor(s);
 
-        info.appendChild(title);
-        info.appendChild(meta);
+        info.appendChild(h3);
+        info.appendChild(p);
 
-        top.appendChild(badge);
+        top.appendChild(img);
         top.appendChild(info);
 
         const actions = document.createElement('div');
-        actions.className = 'actions';
+        actions.className = 'btn-group';
 
-        const up = document.createElement('button');
-        up.className = 'icon';
-        up.title = 'Sposta su';
-        up.textContent = '⬆️';
-        up.disabled = (idx === 0);
-        up.onclick = () => {
+        const mkBtn = (txt, cls, title, onClick, disabled=false) => {
+          const b = document.createElement('button');
+          b.className = cls;
+          b.textContent = txt;
+          b.title = title;
+          b.disabled = disabled;
+          b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+          return b;
+        };
+
+        actions.appendChild(mkBtn('⬆️', 'btn-icon', 'Sposta su', () => {
           if (idx === 0) return;
           [sections[idx-1], sections[idx]] = [sections[idx], sections[idx-1]];
           if (currentIndex === idx) currentIndex = idx - 1;
           else if (currentIndex === idx - 1) currentIndex = idx;
           renderSections();
-        };
+          saveCurrentProjectSilently();
+        }, idx===0));
 
-        const down = document.createElement('button');
-        down.className = 'icon';
-        down.title = 'Sposta giù';
-        down.textContent = '⬇️';
-        down.disabled = (idx === sections.length - 1);
-        down.onclick = () => {
+        actions.appendChild(mkBtn('⬇️', 'btn-icon', 'Sposta giù', () => {
           if (idx === sections.length - 1) return;
           [sections[idx+1], sections[idx]] = [sections[idx], sections[idx+1]];
           if (currentIndex === idx) currentIndex = idx + 1;
           else if (currentIndex === idx + 1) currentIndex = idx;
           renderSections();
-        };
+          saveCurrentProjectSilently();
+        }, idx===sections.length-1));
 
-        const edit = document.createElement('button');
-        edit.className = 'icon';
-        edit.title = 'Modifica';
-        edit.textContent = '✏️';
-        edit.onclick = () => openModal('edit', idx);
+        actions.appendChild(mkBtn('📄', 'btn-icon', 'Duplica', () => {
+          const copy = JSON.parse(JSON.stringify(sections[idx]));
+          sections.splice(idx + 1, 0, copy);
+          if (currentIndex > idx) currentIndex++;
+          renderSections();
+          saveCurrentProjectSilently();
+        }));
 
-        const dup = document.createElement('button');
-dup.className = 'icon';
-dup.title = 'Duplica';
-dup.textContent = '📄';
-dup.onclick = () => {
-  // Copia profonda della sezione (così media/oggetti vengono duplicati bene)
-  const copy = JSON.parse(JSON.stringify(sections[idx]));
-  sections.splice(idx + 1, 0, copy);
+        actions.appendChild(mkBtn('✏️', 'btn-icon', 'Modifica', () => openModal('edit', idx)));
 
-  // Se sei sulla sezione corrente e duplichi "prima" o "qui", tieni stabile l'indice
-  if (currentIndex > idx) currentIndex++;
-
-  renderSections();
-};
-
-        const del = document.createElement('button');
-        del.className = 'icon danger';
-        del.title = 'Elimina';
-        del.textContent = '🗑';
-        del.onclick = () => {
+        actions.appendChild(mkBtn('🗑️', 'btn-danger', 'Elimina', () => {
           sections.splice(idx, 1);
           if (currentIndex > idx) currentIndex--;
           currentIndex = Math.max(0, Math.min(currentIndex, sections.length - 1));
           renderSections();
-        };
-
-        card.style.cursor = 'pointer';
-        card.addEventListener('click', (e) => {
-          if (e.target && e.target.closest('button')) return;
-          currentIndex = idx;
-          renderSections();
-        });
-
-        actions.appendChild(up);
-        actions.appendChild(down);
-        actions.appendChild(dup);
-        actions.appendChild(edit);
-        actions.appendChild(del);
+          saveCurrentProjectSilently();
+        }));
 
         card.appendChild(top);
         card.appendChild(actions);
 
-        if (idx === currentIndex) {
-          card.style.outline = '2px solid rgba(59,130,246,.55)';
-          card.style.outlineOffset = '2px';
-        }
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', () => {
+          currentIndex = idx;
+          renderSections();
+          if (!viewSchermo.classList.contains('hidden')) renderTimeline();
+        });
 
         sectionList.appendChild(card);
       });
 
       renderPlayer();
+      renderTimeline();
     }
 
     // =========================
@@ -972,39 +1176,43 @@ dup.onclick = () => {
         card.className = 'card';
 
         const top = document.createElement('div');
-        top.className = 'card-top';
+        top.className = 'card-info';
 
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = 'Progetto';
+        const icon = document.createElement('img');
+        icon.className = 'preview-thumb';
+        icon.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+            <rect width="100%" height="100%" fill="#2c2c2e"/>
+            <text x="50%" y="54%" font-family="Arial" font-size="22" fill="#8e8e93" text-anchor="middle">📁</text>
+           </svg>`
+        );
 
         const info = document.createElement('div');
+        info.className = 'card-text';
         info.style.flex = '1';
 
-        const title = document.createElement('p');
-        title.className = 'card-title';
+        const title = document.createElement('h3');
         title.textContent = p.name;
 
         const meta = document.createElement('p');
-        meta.className = 'card-meta';
         meta.textContent = `${(p.sections?.length ?? 0)} sezioni`;
 
         info.appendChild(title);
         info.appendChild(meta);
 
-        top.appendChild(badge);
+        top.appendChild(icon);
         top.appendChild(info);
 
         const actions = document.createElement('div');
-        actions.className = 'actions';
+        actions.className = 'btn-group';
 
         const loadBtn = document.createElement('button');
-        loadBtn.className = 'icon';
-        loadBtn.title = 'Carica progetto';
-        loadBtn.textContent = '📂';
+        loadBtn.className = 'btn-icon';
+        loadBtn.textContent = '📂 Carica';
         loadBtn.onclick = async () => {
           sections = JSON.parse(JSON.stringify(p.sections || []));
           currentProjectId = p.id;
+          currentProjectName = p.name;
           projectNameInput.value = p.name;
           currentIndex = 0;
           await setBadge();
@@ -1013,9 +1221,9 @@ dup.onclick = () => {
         };
 
         const renameBtn = document.createElement('button');
-        renameBtn.className = 'icon';
-        renameBtn.title = 'Rinomina';
+        renameBtn.className = 'btn-icon';
         renameBtn.textContent = '🏷️';
+        renameBtn.title = 'Rinomina';
         renameBtn.onclick = async () => {
           const newName = prompt('Nuovo nome progetto:', p.name);
           if (!newName) return;
@@ -1027,6 +1235,7 @@ dup.onclick = () => {
             const res = await STORAGE.saveProjects(projects2);
             if (!res.ok) return showToast('Impossibile rinominare: storage bloccato');
             if (currentProjectId === p.id) {
+              currentProjectName = projects2[i].name;
               projectNameInput.value = projects2[i].name;
               await setBadge();
             }
@@ -1036,9 +1245,9 @@ dup.onclick = () => {
         };
 
         const delBtn = document.createElement('button');
-        delBtn.className = 'icon danger';
-        delBtn.title = 'Elimina progetto';
-        delBtn.textContent = '🗑';
+        delBtn.className = 'btn-danger';
+        delBtn.textContent = '🗑️';
+        delBtn.title = 'Elimina';
         delBtn.onclick = async () => {
           const ok = confirm(`Eliminare il progetto "${p.name}"?`);
           if (!ok) return;
@@ -1047,9 +1256,8 @@ dup.onclick = () => {
           const res = await STORAGE.saveProjects(projects2);
           if (!res.ok) return showToast('Impossibile eliminare: storage bloccato');
 
-          if (currentProjectId === p.id) {
-            detachCurrentProject();
-          }
+          if (currentProjectId === p.id) detachCurrentProject();
+
           await renderProjects();
           showToast('Progetto eliminato');
         };
@@ -1081,6 +1289,7 @@ dup.onclick = () => {
       if (!res.ok) return showToast('Impossibile salvare: storage bloccato');
 
       currentProjectId = newP.id;
+      currentProjectName = newP.name;
       await setBadge();
       await renderProjects();
       showToast(`Salvato come nuovo (${res.where})`);
@@ -1090,12 +1299,10 @@ dup.onclick = () => {
       const name = projectNameInput.value.trim() || 'Senza nome';
       const projects = await STORAGE.loadProjects();
 
-      // Se NON c'è progetto corrente => crea nuovo (così puoi salvarne infiniti)
-      if (!currentProjectId) {
-        return await saveNewProjectAlways();
-      }
+      // Se NON c'è progetto corrente => crea nuovo
+      if (!currentProjectId) return await saveNewProjectAlways();
 
-      // Se c'è progetto corrente => aggiorna QUELLO
+      // Se c'è progetto corrente => aggiorna
       const idx = projects.findIndex(p => p.id === currentProjectId);
       if (idx >= 0) {
         projects[idx].name = name;
@@ -1105,72 +1312,29 @@ dup.onclick = () => {
         const res = await STORAGE.saveProjects(projects);
         if (!res.ok) return showToast('Impossibile salvare: storage bloccato');
 
+        currentProjectName = projects[idx].name;
         await setBadge();
         await renderProjects();
         return showToast(`Progetto aggiornato (${res.where})`);
       }
 
-      // Se per qualche motivo non lo trova, salva come nuovo
+      // Se non lo trova, salva come nuovo
       currentProjectId = null;
       await setBadge();
       return await saveNewProjectAlways();
     }
 
-    // =========================
-    // Fullscreen
-    // =========================
-    async function toggleFullscreen() {
-  // Se il fullscreen "vero" non è disponibile (iPhone), usiamo quello finto.
-  const canFs = !!(screen.requestFullscreen && document.fullscreenEnabled);
-
-  if (canFs) {
-    try {
-      if (!document.fullscreenElement) await screen.requestFullscreen();
-      else await document.exitFullscreen();
-      return;
-    } catch {
-      // Se fallisce, usiamo comunque il fullscreen finto
+    // Salvataggio "silenzioso" quando modifichi sezioni (se hai un progetto caricato)
+    async function saveCurrentProjectSilently() {
+      if (!currentProjectId) return;
+      const projects = await STORAGE.loadProjects();
+      const idx = projects.findIndex(p => p.id === currentProjectId);
+      if (idx >= 0) {
+        projects[idx].sections = JSON.parse(JSON.stringify(sections));
+        projects[idx].updatedAt = Date.now();
+        await STORAGE.saveProjects(projects);
+      }
     }
-  }
-
-  // Fullscreen finto: lo schermo diventa a tutto schermo e nascondiamo le colonne
-  const isPseudo = screen.classList.contains('pseudo-fullscreen');
-  screen.classList.toggle('pseudo-fullscreen', !isPseudo);
-
-  document.querySelectorAll('.sidebar').forEach(el => {
-    el.classList.toggle('hide-when-pseudo', !isPseudo);
-  });
-
-  fullscreenBtn.textContent = !isPseudo ? '⤢' : '⛶';
-}
-    document.addEventListener('fullscreenchange', () => {
-      fullscreenBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
-    });
-
-    // =========================
-    // Events
-    // =========================
-    addBtn.addEventListener('click', () => openModal('create'));
-    closeModal.addEventListener('click', closeModalFn);
-    cancelBtn.addEventListener('click', closeModalFn);
-
-    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModalFn(); });
-
-    typeSelect.addEventListener('change', () => { clearError(); switchTypeUI(); });
-    exChangeMode.addEventListener('change', () => { clearError(); switchExerciseModeUI(); });
-
-    saveSectionBtn.addEventListener('click', async () => {
-      clearError();
-      const s = await readSectionFromForm();
-      if (!s) return;
-
-      if (editingIndex === null) sections.push(s);
-      else sections[editingIndex] = s;
-
-      closeModalFn();
-      renderSections();
-      showToast(editingIndex === null ? 'Sezione creata' : 'Sezione modificata');
-    });
 
     saveProjectBtn.addEventListener('click', saveCurrentProject);
     saveAsNewBtn.addEventListener('click', saveNewProjectAlways);
@@ -1187,9 +1351,65 @@ dup.onclick = () => {
       showToast('Nuovo progetto avviato');
     });
 
+    // =========================
+    // Fullscreen (vero o finto)
+    // =========================
+    async function toggleFullscreen() {
+      const canFs = !!(screen.requestFullscreen && document.fullscreenEnabled);
+
+      if (canFs) {
+        try {
+          if (!document.fullscreenElement) await screen.requestFullscreen();
+          else await document.exitFullscreen();
+          return;
+        } catch {
+          // fallback a pseudo
+        }
+      }
+
+      const isPseudo = screen.classList.contains('pseudo-fullscreen');
+      screen.classList.toggle('pseudo-fullscreen', !isPseudo);
+
+      // nascondi header + tab bar in pseudo
+      document.getElementById('appHeader').classList.toggle('hide-when-pseudo', !isPseudo);
+      document.getElementById('tabBar').classList.toggle('hide-when-pseudo', !isPseudo);
+      document.getElementById('contentArea').classList.toggle('hide-when-pseudo', !isPseudo);
+
+      fullscreenBtn.textContent = !isPseudo ? '⤢' : '⛶';
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      fullscreenBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
+    });
+
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
     backBtn.addEventListener('click', back);
     nextBtn.addEventListener('click', next);
-    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // =========================
+    // Workout timer
+    // =========================
+    function startWorkout() {
+      // prova fullscreen vero, altrimenti l'utente può usare il tasto ⛶
+      toggleFullscreen().catch(() => {});
+      workoutSeconds = 0;
+      timerDisplay.textContent = '00:00';
+
+      if (workoutTimer) clearInterval(workoutTimer);
+
+      workoutTimer = setInterval(() => {
+        workoutSeconds++;
+        const mins = Math.floor(workoutSeconds / 60).toString().padStart(2, '0');
+        const secs = (workoutSeconds % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${mins}:${secs}`;
+      }, 1000);
+
+      currentIndex = 0;
+      renderPlayer();
+      renderTimeline();
+      showToast('Workout avviato');
+    }
+    btnAvviaWorkout.addEventListener('click', startWorkout);
 
     // =========================
     // Init
@@ -1198,8 +1418,9 @@ dup.onclick = () => {
       switchTypeUI();
       switchExerciseModeUI();
       await setBadge();
-      renderSections();
       await renderProjects();
+      renderSections();
+      switchTab('progetti');
     })();
   </script>
 </body>
