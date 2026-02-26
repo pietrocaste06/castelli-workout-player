@@ -897,11 +897,14 @@
         return;
       }
 
-      if (section.type === 'countdown') {
-        playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Countdown';
-        playerMedia.innerHTML = `<div class="player-empty">Riposo / Countdown</div>`;
-        return;
-      }
+       if (section.type === 'countdown') {
+  // Titolo in alto (come esercizi)
+  playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Riposo';
+
+  // NIENTE testo sotto, così l'overlay numerico non si sovrappone a nulla
+  playerMedia.innerHTML = '';
+  return;
+}
 
       playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Esercizio';
 
@@ -1355,7 +1358,8 @@
     // Fullscreen (vero o finto)
     // =========================
     async function toggleFullscreen() {
-      const canFs = !!(screen.requestFullscreen && document.fullscreenEnabled);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const canFs = !isIOS && !!(screen.requestFullscreen && document.fullscreenEnabled);
 
       if (canFs) {
         try {
@@ -1373,7 +1377,6 @@
       // nascondi header + tab bar in pseudo
       document.getElementById('appHeader').classList.toggle('hide-when-pseudo', !isPseudo);
       document.getElementById('tabBar').classList.toggle('hide-when-pseudo', !isPseudo);
-      document.getElementById('contentArea').classList.toggle('hide-when-pseudo', !isPseudo);
 
       fullscreenBtn.textContent = !isPseudo ? '⤢' : '⛶';
     }
