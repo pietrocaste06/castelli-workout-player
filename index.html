@@ -635,12 +635,34 @@
     // Workout timer
     let workoutTimer = null;
     let workoutSeconds = 0;
+    let workoutFinishedSeconds = null; // tempo finale congelato
 
     // Countdown
     let countdownTimer = null;
     let countdownRemaining = 0;
 
     const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+    // =========================
+    // Schermata finale (non modificabile)
+    // =========================
+    const FINISH_SECTION = {
+      type: 'finish',
+      locked: true,
+      title: 'Allenamento completato'
+    };
+
+    function effectiveSections(){
+      // Mostra la schermata finale solo se c'è almeno 1 sezione reale
+      return sections.length ? [...sections, FINISH_SECTION] : [];
+    }
+
+    function formatDuration(totalSeconds){
+      const s = Math.max(0, totalSeconds || 0);
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }
+
 
     // =========================
     // Toast
@@ -897,14 +919,25 @@
         return;
       }
 
-       if (section.type === 'countdown') {
-  // Titolo in alto (come esercizi)
-  playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Riposo';
-
-  // NIENTE testo sotto, così l'overlay numerico non si sovrappone a nulla
-  playerMedia.innerHTML = '';
-  return;
-}
+      
+      // Schermata finale fissa
+      if (section.type === 'finish') {
+        playerTitle.textContent = section.title || 'Allenamento completato';
+        const finalSec = (workoutFinishedSeconds !== null) ? workoutFinishedSeconds : workoutSeconds;
+        playerMedia.innerHTML = `
+          <div class="player-empty" style="font-size:16px; line-height:1.5">
+            <div style="font-weight:1000; font-size:20px; margin-bottom:8px">Hai finito il tuo allenamento! 🎉</div>
+            <div style="color:rgba(255,255,255,.85); margin-bottom:8px">Ci hai messo <b>${formatDuration(finalSec)}</b></div>
+            <div style="color:rgba(255,255,255,.6); font-size:12px">Puoi tornare indietro per rivedere le schermate.</div>
+          </div>
+        `;
+        return;
+      }
+if (section.type === 'countdown') {
+        playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Riposo';
+        playerMedia.innerHTML = '';
+        return;
+      }
 
       playerTitle.textContent = (section.title && section.title.trim()) ? section.title.trim() : 'Esercizio';
 
@@ -955,21 +988,42 @@
     }
 
     function goTo(index) {
-      if (sections.length === 0) return;
-      currentIndex = Math.max(0, Math.min(index, sections.length - 1));
+      const list = effectiveSections();
+      if (list.length === 0) return;
+
+      currentIndex = Math.max(0, Math.min(index, list.length - 1));
+
+      const s = list[currentIndex];
+      if (s.type === 'finish') {
+        if (workoutFinishedSeconds === null) workoutFinishedSeconds = workoutSeconds;
+        if (workoutTimer) clearInterval(workoutTimer);
+        workoutTimer = null;
+        stopCountdown();
+      }
+
       renderSections(); // mantiene highlight e aggiorna player/timeline
       if (!viewSchermo.classList.contains('hidden')) renderTimeline();
     }
 
-    function next(){ if (currentIndex < sections.length - 1) goTo(currentIndex + 1); }
-    function back(){ if (currentIndex > 0) goTo(currentIndex - 1); }
+    function next(){
+      stopCountdown();
+      const total = effectiveSections().length;
+      if (currentIndex < total - 1) goTo(currentIndex + 1);
+    }
+    function back(){
+      stopCountdown();
+      if (currentIndex > 0) goTo(currentIndex - 1);
+    }
 
     function renderPlayer() {
       stopCountdown();
 
+      const list = effectiveSections();
+
       if (!currentProjectId && sections.length === 0) {
         backBtn.disabled = true;
         nextBtn.disabled = true;
+        nextBtn.style.display = 'inline-flex';
         setMediaContent(null);
         return;
       }
@@ -977,37 +1031,63 @@
       if (sections.length === 0) {
         backBtn.disabled = true;
         nextBtn.disabled = true;
+        nextBtn.style.display = 'inline-flex';
         playerTitle.textContent = currentProjectName;
         playerMedia.innerHTML = `<div class="player-empty">Nessuna sezione. Vai su <b>SEZIONI</b> e aggiungine una.</div>`;
         return;
       }
 
-      currentIndex = Math.max(0, Math.min(currentIndex, sections.length - 1));
-      const s = sections[currentIndex];
+      currentIndex = Math.max(0, Math.min(currentIndex, list.length - 1));
+      const s = list[currentIndex];
 
       backBtn.disabled = (currentIndex === 0);
-      nextBtn.disabled = (currentIndex === sections.length - 1);
+      nextBtn.disabled = (currentIndex === list.length - 1);
       nextBtn.style.display = 'inline-flex';
+
+      // Se arrivo alla schermata finale: congelo tempo e fermo timer
+      if (s.type === 'finish') {
+        if (workoutFinishedSeconds === null) workoutFinishedSeconds = workoutSeconds;
+        if (workoutTimer) clearInterval(workoutTimer);
+        workoutTimer = null;
+        stopCountdown();
+      }
 
       setMediaContent(s);
 
+      // Countdown riposo (tasto avanti sempre disponibile)
       if (s.type === 'countdown') {
-        nextBtn.style.display = 'none';
-        startCountdown(s.seconds ?? 30, () => { if (currentIndex < sections.length - 1) next(); });
+        startCountdown(s.seconds ?? 30, () => {
+          if (currentIndex < list.length - 1) next();
+        });
         return;
       }
 
-      if (s.changeMode === 'countdown') {
-        nextBtn.style.display = 'none';
-        startCountdown(s.seconds ?? 30, () => { if (currentIndex < sections.length - 1) next(); });
+      // Esercizio con cambio automatico (tasto avanti sempre disponibile)
+      if (s.type === 'esercizio' && s.changeMode === 'countdown') {
+        startCountdown(s.seconds ?? 30, () => {
+          if (currentIndex < list.length - 1) next();
+        });
       }
     }
 
     function renderTimeline() {
-      timelineBar.innerHTML = sections.map((s, i) => {
+      const list = effectiveSections();
+      timelineBar.innerHTML = list.map((s, i) => {
+        if (s.type === 'finish') {
+          return `
+            <div class="timeline-item ${i === currentIndex ? 'active' : ''}" onclick="window.__goTo(${i})">
+              ✅ • END<br>FINE
+            </div>
+          `;
+        }
+
         const label = (s.type === 'esercizio') ? 'EX' : 'REST';
-        const secs = (s.type === 'countdown') ? (s.seconds ?? '--') : ((s.changeMode === 'countdown') ? (s.seconds ?? '--') : '--');
+        const secs = (s.type === 'countdown')
+          ? (s.seconds ?? '--')
+          : ((s.changeMode === 'countdown') ? (s.seconds ?? '--') : '--');
+
         const title = (s.type === 'countdown') ? (s.title || 'Riposo') : (s.title || 'Esercizio');
+
         return `
           <div class="timeline-item ${i === currentIndex ? 'active' : ''}" onclick="window.__goTo(${i})">
             ${label} • ${secs}s<br>${escapeHtml(title).slice(0, 14)}
@@ -1030,7 +1110,7 @@
     // =========================
     function previewFor(s){
       if (!s) return '';
-      if (s.type === 'countdown') return '';
+      if (s.type === 'countdown' || s.type === 'finish') return '';
       const media = s.media;
       if (!media || !media.src) return '';
       const src = media.src;
@@ -1057,7 +1137,11 @@
       }
       emptyState.style.display = 'none';
 
-      sections.forEach((s, idx) => {
+      const list = effectiveSections();
+
+      list.forEach((s, idx) => {
+        const isLocked = (s.type === 'finish' || s.locked);
+
         const card = document.createElement('div');
         card.className = 'card' + (idx === currentIndex ? ' active' : '');
 
@@ -1072,7 +1156,9 @@
         else img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
           `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
             <rect width="100%" height="100%" fill="#2c2c2e"/>
-            <text x="50%" y="54%" font-family="Arial" font-size="22" fill="#8e8e93" text-anchor="middle">${s.type === 'countdown' ? '⏱' : '🏋️'}</text>
+            <text x="50%" y="54%" font-family="Arial" font-size="22" fill="#8e8e93" text-anchor="middle">${
+              s.type === 'finish' ? '✅' : (s.type === 'countdown' ? '⏱' : '🏋️')
+            }</text>
            </svg>`
         );
 
@@ -1081,12 +1167,13 @@
         info.style.flex = '1';
 
         const h3 = document.createElement('h3');
-        h3.textContent = (s.type === 'esercizio')
-          ? ((s.title && s.title.trim()) ? s.title.trim() : 'Esercizio')
-          : ((s.title && s.title.trim()) ? s.title.trim() : 'Riposo');
+        if (s.type === 'finish') h3.textContent = 'Fine Allenamento';
+        else if (s.type === 'esercizio') h3.textContent = ((s.title && s.title.trim()) ? s.title.trim() : 'Esercizio');
+        else h3.textContent = ((s.title && s.title.trim()) ? s.title.trim() : 'Riposo');
 
         const p = document.createElement('p');
-        p.textContent = formatSectionLabel(s) + ' • ' + metaFor(s);
+        if (s.type === 'finish') p.textContent = 'Schermata finale fissa (non modificabile)';
+        else p.textContent = formatSectionLabel(s) + ' • ' + metaFor(s);
 
         info.appendChild(h3);
         info.appendChild(p);
@@ -1094,57 +1181,60 @@
         top.appendChild(img);
         top.appendChild(info);
 
-        const actions = document.createElement('div');
-        actions.className = 'btn-group';
-
-        const mkBtn = (txt, cls, title, onClick, disabled=false) => {
-          const b = document.createElement('button');
-          b.className = cls;
-          b.textContent = txt;
-          b.title = title;
-          b.disabled = disabled;
-          b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
-          return b;
-        };
-
-        actions.appendChild(mkBtn('⬆️', 'btn-icon', 'Sposta su', () => {
-          if (idx === 0) return;
-          [sections[idx-1], sections[idx]] = [sections[idx], sections[idx-1]];
-          if (currentIndex === idx) currentIndex = idx - 1;
-          else if (currentIndex === idx - 1) currentIndex = idx;
-          renderSections();
-          saveCurrentProjectSilently();
-        }, idx===0));
-
-        actions.appendChild(mkBtn('⬇️', 'btn-icon', 'Sposta giù', () => {
-          if (idx === sections.length - 1) return;
-          [sections[idx+1], sections[idx]] = [sections[idx], sections[idx+1]];
-          if (currentIndex === idx) currentIndex = idx + 1;
-          else if (currentIndex === idx + 1) currentIndex = idx;
-          renderSections();
-          saveCurrentProjectSilently();
-        }, idx===sections.length-1));
-
-        actions.appendChild(mkBtn('📄', 'btn-icon', 'Duplica', () => {
-          const copy = JSON.parse(JSON.stringify(sections[idx]));
-          sections.splice(idx + 1, 0, copy);
-          if (currentIndex > idx) currentIndex++;
-          renderSections();
-          saveCurrentProjectSilently();
-        }));
-
-        actions.appendChild(mkBtn('✏️', 'btn-icon', 'Modifica', () => openModal('edit', idx)));
-
-        actions.appendChild(mkBtn('🗑️', 'btn-danger', 'Elimina', () => {
-          sections.splice(idx, 1);
-          if (currentIndex > idx) currentIndex--;
-          currentIndex = Math.max(0, Math.min(currentIndex, sections.length - 1));
-          renderSections();
-          saveCurrentProjectSilently();
-        }));
-
         card.appendChild(top);
-        card.appendChild(actions);
+
+        if (!isLocked) {
+          const actions = document.createElement('div');
+          actions.className = 'btn-group';
+
+          const mkBtn = (txt, cls, title, onClick, disabled=false) => {
+            const b = document.createElement('button');
+            b.className = cls;
+            b.textContent = txt;
+            b.title = title;
+            b.disabled = disabled;
+            b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+            return b;
+          };
+
+          actions.appendChild(mkBtn('⬆️', 'btn-icon', 'Sposta su', () => {
+            if (idx === 0) return;
+            [sections[idx-1], sections[idx]] = [sections[idx], sections[idx-1]];
+            if (currentIndex === idx) currentIndex = idx - 1;
+            else if (currentIndex === idx - 1) currentIndex = idx;
+            renderSections();
+            saveCurrentProjectSilently();
+          }, idx===0));
+
+          actions.appendChild(mkBtn('⬇️', 'btn-icon', 'Sposta giù', () => {
+            if (idx === sections.length - 1) return;
+            [sections[idx+1], sections[idx]] = [sections[idx], sections[idx+1]];
+            if (currentIndex === idx) currentIndex = idx + 1;
+            else if (currentIndex === idx + 1) currentIndex = idx;
+            renderSections();
+            saveCurrentProjectSilently();
+          }, idx===sections.length-1));
+
+          actions.appendChild(mkBtn('📄', 'btn-icon', 'Duplica', () => {
+            const copy = JSON.parse(JSON.stringify(sections[idx]));
+            sections.splice(idx + 1, 0, copy);
+            if (currentIndex > idx) currentIndex++;
+            renderSections();
+            saveCurrentProjectSilently();
+          }));
+
+          actions.appendChild(mkBtn('✏️', 'btn-icon', 'Modifica', () => openModal('edit', idx)));
+
+          actions.appendChild(mkBtn('🗑️', 'btn-danger', 'Elimina', () => {
+            sections.splice(idx, 1);
+            if (currentIndex > idx) currentIndex--;
+            currentIndex = Math.max(0, Math.min(currentIndex, effectiveSections().length - 1));
+            renderSections();
+            saveCurrentProjectSilently();
+          }));
+
+          card.appendChild(actions);
+        }
 
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
@@ -1377,7 +1467,7 @@
       // nascondi header + tab bar in pseudo
       document.getElementById('appHeader').classList.toggle('hide-when-pseudo', !isPseudo);
       document.getElementById('tabBar').classList.toggle('hide-when-pseudo', !isPseudo);
-
+      
       fullscreenBtn.textContent = !isPseudo ? '⤢' : '⛶';
     }
 
@@ -1395,6 +1485,7 @@
     function startWorkout() {
       // prova fullscreen vero, altrimenti l'utente può usare il tasto ⛶
       toggleFullscreen().catch(() => {});
+      workoutFinishedSeconds = null;
       workoutSeconds = 0;
       timerDisplay.textContent = '00:00';
 
