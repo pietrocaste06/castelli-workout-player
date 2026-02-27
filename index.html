@@ -366,6 +366,15 @@
             <button id="saveAsNewBtn" class="btn-ghost">🧷 Salva come nuovo</button>
             <button id="newProjectBtn" class="btn-icon">➕ Nuovo</button>
           </div>
+        <div class="btn-group" style="margin-top:8px">
+          <button id="exportProjectsBtn" class="btn-icon">⬇️ Esporta</button>
+          <button id="importProjectsBtn" class="btn-icon">⬆️ Importa</button>
+          <input id="importFileInput" type="file" accept="application/json" class="hidden" />
+        </div>
+        <p class="hint" style="margin:0">
+          Esporta un file .json con tutti i progetti. Importa per copiarli su un altro dispositivo.
+        </p>
+
         </div>
 
         <div id="projectList"></div>
@@ -1432,6 +1441,109 @@ if (section.type === 'countdown') {
     saveProjectBtn.addEventListener('click', saveCurrentProject);
     saveAsNewBtn.addEventListener('click', saveNewProjectAlways);
 
+
+    // =========================
+    // Import / Export progetti (per sync tra dispositivi)
+    // =========================
+    const exportProjectsBtn = document.getElementById('exportProjectsBtn');
+    const importProjectsBtn = document.getElementById('importProjectsBtn');
+    const importFileInput = document.getElementById('importFileInput');
+
+    function downloadTextFile(filename, text) {
+      const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function sanitizeImportedProjects(data) {
+      // Accettiamo: array di progetti oppure oggetto {projects:[...]}
+      const arr = Array.isArray(data) ? data : (data && Array.isArray(data.projects) ? data.projects : null);
+      if (!arr) return { ok: false, projects: [], error: 'Formato non valido (serve un array di progetti).' };
+
+      const cleaned = [];
+      for (const p of arr) {
+        if (!p || typeof p !== 'object') continue;
+
+        const name = (typeof p.name === 'string' && p.name.trim()) ? p.name.trim() : 'Senza nome';
+        let id = (typeof p.id === 'string' && p.id.trim()) ? p.id.trim() : null;
+
+        const sections = Array.isArray(p.sections) ? p.sections : [];
+
+        if (!id) id = uid();
+
+        cleaned.push({
+          id,
+          name,
+          sections: JSON.parse(JSON.stringify(sections)),
+          createdAt: (typeof p.createdAt === 'number') ? p.createdAt : Date.now(),
+          updatedAt: (typeof p.updatedAt === 'number') ? p.updatedAt : undefined
+        });
+      }
+
+      if (!cleaned.length) return { ok: false, projects: [], error: 'Nessun progetto valido trovato nel file.' };
+
+      // Dedup per id dentro l'import (ultima vince)
+      const map = new Map();
+      for (const p of cleaned) map.set(p.id, p);
+      return { ok: true, projects: Array.from(map.values()), error: null };
+    }
+
+    exportProjectsBtn?.addEventListener('click', async () => {
+      const projects = await STORAGE.loadProjects();
+      const payload = {
+        app: 'WorkoutStudioPro',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        projects
+      };
+      const safeDate = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      downloadTextFile(`workout-projects-${safeDate}.json`, JSON.stringify(payload, null, 2));
+      showToast('Esportazione pronta');
+    });
+
+    importProjectsBtn?.addEventListener('click', () => {
+      importFileInput?.click();
+    });
+
+    importFileInput?.addEventListener('change', async () => {
+      const file = importFileInput.files && importFileInput.files[0] ? importFileInput.files[0] : null;
+      importFileInput.value = '';
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        const parsed = sanitizeImportedProjects(data);
+        if (!parsed.ok) return showToast(parsed.error || 'File non valido');
+
+        // Merge: se id uguale, import sovrascrive. Se id diverso, aggiunge.
+        const existing = await STORAGE.loadProjects();
+        const map = new Map(existing.map(p => [p.id, p]));
+        for (const p of parsed.projects) map.set(p.id, p);
+
+        // Ordina: più recenti prima
+        const merged = Array.from(map.values()).sort((a, b) => {
+          const ta = (a.updatedAt ?? a.createdAt ?? 0);
+          const tb = (b.updatedAt ?? b.createdAt ?? 0);
+          return tb - ta;
+        });
+
+        const res = await STORAGE.saveProjects(merged);
+        if (!res.ok) return showToast('Import fallito: storage bloccato');
+
+        await renderProjects();
+        showToast(`Import ok (${parsed.projects.length} progetti)`);
+      } catch (e) {
+        showToast('Errore: file JSON non valido');
+      }
+    });
     newProjectBtn.addEventListener('click', async () => {
       const ok = confirm('Iniziare un nuovo progetto? (Le sezioni attuali resteranno solo se le salvi prima)');
       if (!ok) return;
